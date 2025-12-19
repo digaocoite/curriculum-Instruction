@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Biliteracy Quest: The Pedagogy Dungeon</title>
+  <title>The Biliteracy Quest</title>
   <style>
     :root{
       --mizzou-gold:#F1B82D;
@@ -15,13 +15,11 @@
       --muted:#5b616e;
       --line:#e6e7eb;
       --success:#0b7a3b;
-      --warn:#8a5a00;
       --accent:#1b1b1b;
       --shadow: 0 12px 30px rgba(0,0,0,.10);
       --shadow2: 0 10px 22px rgba(0,0,0,.08);
       --radius:18px;
     }
-
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -33,7 +31,6 @@
         linear-gradient(180deg, #fff 0%, #fbfbfd 60%, #fff 100%);
       min-height:100vh;
     }
-
     .wrap{max-width:1180px; margin:0 auto; padding:22px 18px 40px;}
     .topbar{
       display:flex; gap:16px; align-items:stretch; justify-content:space-between;
@@ -72,15 +69,6 @@
     }
     .btnGold:hover{background:linear-gradient(180deg, #ffd35f, var(--mizzou-gold))}
     .btnGhost{background:transparent}
-    .chip{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:7px 10px; border-radius:999px;
-      background:rgba(241,184,45,.13);
-      border:1px solid rgba(241,184,45,.35);
-      color:#fff; font-size:12px;
-    }
-    .dot{width:8px; height:8px; border-radius:999px; background:var(--mizzou-gold); box-shadow:0 0 0 3px rgba(241,184,45,.18);}
-
     .grid{
       display:grid;
       grid-template-columns: 1.25fr .75fr;
@@ -91,7 +79,6 @@
       .grid{grid-template-columns: 1fr;}
       .actions{justify-content:flex-start}
     }
-
     .card{
       background:var(--paper);
       border:1px solid var(--line);
@@ -107,10 +94,7 @@
     }
     .cardHeader h2{margin:0; font-size:15px;}
     .cardBody{padding:16px;}
-
-    .playerPanel{
-      display:flex; flex-direction:column; gap:10px;
-    }
+    .playerPanel{display:flex; flex-direction:column; gap:10px;}
     .statRow{display:flex; gap:10px; flex-wrap:wrap;}
     .stat{
       flex:1;
@@ -299,6 +283,7 @@
       font-size:12px;
       line-height:1.35;
       color:rgba(255,255,255,.90);
+      white-space:pre-wrap;
     }
 
     .choices{
@@ -345,10 +330,7 @@
     .result p{margin:0; color:#222; font-size:12.5px; line-height:1.4}
     .result .hint{margin-top:8px; color:var(--muted); font-size:12px}
 
-    .lensRow{
-      display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;
-      align-items:center;
-    }
+    .lensRow{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; align-items:center;}
     .lensBtn{
       border-radius:999px;
       padding:8px 10px;
@@ -480,10 +462,8 @@
       z-index:99;
       font-size:13px;
     }
-
     .hidden{display:none!important}
     .divider{height:1px; background:var(--line); margin:12px 0}
-
     .footerNote{
       margin-top:16px;
       color:var(--muted);
@@ -503,28 +483,23 @@
       <div class="brand">
         <h1>
           <span class="badgeLogo">M</span>
-          Biliteracy Quest: The Pedagogy Dungeon
+          The Biliteracy Quest
         </h1>
         <p>
-          Make instructional decisions, earn insight, and build a plan you can submit in Canvas.
-          No login, no saved data, and no real student information.
+          Choose a mission, make decisions, and generate a Decision Path Scroll you can paste into Canvas.
         </p>
-        <div class="chip" aria-label="FERPA safe reminder">
-          <span class="dot"></span>
-          FERPA safe design, no names, no storage
-        </div>
       </div>
 
       <div class="actions">
-        <button class="btn btnGold" id="btnStart">Start Quest</button>
-        <button class="btn" id="btnSpellbook">Theory Spellbook</button>
-        <button class="btn btnGhost" id="btnReset">Reset</button>
+        <button type="button" class="btn btnGold" id="btnStart">Mission Hub</button>
+        <button type="button" class="btn" id="btnSpellbook">Theory Spellbook</button>
+        <button type="button" class="btn btnGhost" id="btnReset">Reset</button>
       </div>
     </div>
 
     <div class="grid">
       <div class="card" id="cardMain">
-        <div class="questMap" id="questMap" aria-label="Quest map navigation">
+        <div class="questMap" id="questMap">
           <div class="checkpoint active" data-step="0">
             <div class="left">
               <div class="bubble">1</div>
@@ -535,18 +510,16 @@
             </div>
             <div class="checkMark">✓</div>
           </div>
-
           <div class="checkpoint" data-step="1">
             <div class="left">
               <div class="bubble">2</div>
               <div>
                 <div><b>Face Scenario</b></div>
-                <small>Decide, then see outcomes</small>
+                <small>Decide, see outcomes</small>
               </div>
             </div>
             <div class="checkMark">✓</div>
           </div>
-
           <div class="checkpoint" data-step="2">
             <div class="left">
               <div class="bubble">3</div>
@@ -557,7 +530,6 @@
             </div>
             <div class="checkMark">✓</div>
           </div>
-
           <div class="checkpoint" data-step="3">
             <div class="left">
               <div class="bubble">4</div>
@@ -568,7 +540,6 @@
             </div>
             <div class="checkMark">✓</div>
           </div>
-
           <div class="checkpoint" data-step="4">
             <div class="left">
               <div class="bubble">5</div>
@@ -585,15 +556,11 @@
           <div id="screenMissions">
             <h2 style="margin:0 0 10px;">Mission Hub</h2>
             <p class="tiny" style="margin:0 0 14px;">
-              Choose one mission. Make three decisions. Justify at least one choice using theory.
-              Earn XP for thoughtful reasoning.
+              Pick one mission. You’ll complete 3 rounds. Save at least one justification to earn XP.
             </p>
-
             <div class="missions" id="missions"></div>
-
             <div class="footerNote">
-              Tip: Your best score comes from explaining tradeoffs, not from picking a single perfect answer.
-              You can use the Theory Spellbook any time.
+              Tip: The best answers explain tradeoffs and connect decisions to theory, not “perfect” choices.
             </div>
           </div>
 
@@ -610,8 +577,8 @@
                     <h4>Story Scene</h4>
                     <p id="scenarioScene"></p>
                   </div>
-                  <div class="artifact" aria-label="Fictional student artifact">
-                    <div class="label">Fictional classroom artifact</div>
+                  <div class="artifact">
+                    <div class="label">Classroom artifact</div>
                     <div class="paper" id="scenarioArtifact"></div>
                   </div>
                 </div>
@@ -622,7 +589,7 @@
                       <b id="decisionPrompt">Decision Point</b>
                       <div class="tiny" id="decisionHint">Choose one action</div>
                     </div>
-                    <div class="pill" id="xpHint">Earn XP by justifying your choice</div>
+                    <div class="pill">Earn XP by saving a justification</div>
                   </div>
 
                   <div class="choices" id="choices"></div>
@@ -638,8 +605,8 @@
                         <h4>Theory Lens Prompt</h4>
                         <p id="lensPrompt"></p>
                         <div class="lensRow">
-                          <button class="lensBtn" id="btnShowLens">Open Lens Hints</button>
-                          <button class="lensBtn" id="btnNext">Next Round</button>
+                          <button type="button" class="lensBtn" id="btnShowLens">Open Lens Hints</button>
+                          <button type="button" class="lensBtn" id="btnNext">Next Round</button>
                         </div>
                         <div class="lensPop" id="lensPop"></div>
                       </div>
@@ -647,25 +614,23 @@
 
                     <div class="inputBox">
                       <b>Justify your choice</b>
-                      <p class="note">Write 3 to 6 sentences. Mention at least one author or course idea. No names, no student identifiers.</p>
-                      <textarea id="justification" placeholder="Example: I chose option B because it supports oral rehearsal before writing, which aligns with Gibbons’ oral to written progression. It also increases access by allowing participation through talk and structured supports, which connects to Hornberger. A risk is time, so I would keep the oral step brief and use a visual organizer to bridge into writing."></textarea>
+                      <p class="note">Write 3 to 6 sentences. Mention at least one author or course idea.</p>
+                      <textarea id="justification" placeholder="Example: I chose option B because it supports oral rehearsal before writing, which aligns with Gibbons. It also increases access by creating structured participation pathways, which connects to Hornberger. A risk is time, so I would keep the oral step brief and use a visual organizer to bridge into writing."></textarea>
                       <div class="row">
-                        <button class="btn btnGold" id="btnSaveJustification">Save justification and earn XP</button>
+                        <button type="button" class="btn btnGold" id="btnSaveJustification">Save justification and earn XP</button>
                         <span class="note" id="justificationStatus">Not saved yet</span>
                       </div>
                     </div>
-
                   </div>
                 </div>
-
               </div>
 
               <div class="log">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
                   <b>Decision Path Scroll</b>
                   <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <button class="miniBtn" id="btnCopyLog">Copy scroll</button>
-                    <button class="miniBtn miniBtnGold" id="btnFinish">Finish mission</button>
+                    <button type="button" class="miniBtn" id="btnCopyLog">Copy scroll</button>
+                    <button type="button" class="miniBtn miniBtnGold" id="btnFinish">Finish mission</button>
                   </div>
                 </div>
                 <div class="divider"></div>
@@ -694,11 +659,7 @@
                 <div style="margin-top:12px;" class="sceneBox">
                   <h4>Copy everything</h4>
                   <p class="tiny" style="margin:0 0 10px;">This copy includes your scroll and any saved justification text.</p>
-                  <button class="btn btnGold" id="btnCopyAll">Copy for Canvas</button>
-                </div>
-
-                <div class="footerNote">
-                  Reminder: This webpage stores nothing. When you refresh, your work disappears unless you copied it.
+                  <button type="button" class="btn btnGold" id="btnCopyAll">Copy for Canvas</button>
                 </div>
               </div>
             </div>
@@ -712,10 +673,8 @@
               </div>
               <div class="panelBody">
                 <div class="spellbook" id="spellbook"></div>
-
                 <div class="footerNote">
-                  Use these prompts to strengthen your justification. The goal is not to name drop.
-                  The goal is to explain why a move supports language development, access, participation, and learning.
+                  Use these prompts to strengthen your justification. Focus on “why this supports learning” and “who gains access.”
                 </div>
               </div>
             </div>
@@ -751,11 +710,7 @@
             <div class="stat">
               <div class="k">Unlocked badges</div>
               <div id="badgesList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
-              <p class="tiny" style="margin-top:8px;">Badges unlock when you finish a mission and apply theory.</p>
-            </div>
-
-            <div class="footerNote">
-              Mizzou theme: black and gold. Built for easy embedding in Canvas or hosting on GitHub Pages.
+              <p class="tiny" style="margin-top:8px;">Badges unlock when you finish missions and connect decisions to theory.</p>
             </div>
           </div>
         </div>
@@ -767,183 +722,10 @@
 
   <script>
     const STATE = {
-      step: 0,
-      xp: 0,
-      badges: [],
-      missionId: null,
-      round: 0,
-      decisionLog: [],
-      savedJustifications: [],
-      appliedSpells: []
+      step: 0, xp: 0, badges: [],
+      missionId: null, round: 0,
+      decisionLog: [], savedJustifications: [], appliedSpells: []
     };
-
-    const MISSIONS = [
-      {
-        id: "bridge",
-        title: "The Oral to Writing Bridge",
-        emoji: "🌉",
-        sigil: "OW",
-        difficulty: 2,
-        tags: ["Gibbons", "Academic Language", "Scaffolding"],
-        blurb: "Students speak well but struggle to write. Build a bridge from talk to text.",
-        scenario: {
-          title: "Mission 1: The Oral to Writing Bridge",
-          rounds: [
-            {
-              scene: "You enter Room 1. A glowing sign reads: Academic Paragraph Due. Your multilingual class has strong ideas in discussion, but their writing is short, repetitive, or vague. You have 45 minutes to guide students from meaning to academic language.",
-              artifact: "Fictional student note: “I like Mizzou because is big. The class is good. I learn.”\nTeacher observation: Students can explain more when they talk, but they do not know how to expand ideas in writing.",
-              prompt: "How do you start this lesson today?",
-              hint: "Pick a first move that builds meaning before drafting",
-              choices: [
-                {
-                  label: "A",
-                  title: "Start writing immediately",
-                  text: "Students begin drafting right away with minimal scaffolding.",
-                  outcome: "Some students start quickly, but many freeze or produce shallow sentences. Writing becomes compliance rather than meaning making.",
-                  tradeoff: "Benefit: Saves time. Risk: Low access for students who need oral rehearsal or visual support.",
-                  lensPrompt: "Which choice best supports a gradual move from spoken meaning to written form? How does this affect participation?"
-                },
-                {
-                  label: "B",
-                  title: "Structured oral rehearsal",
-                  text: "Use a brief talk protocol and sentence starters so students rehearse ideas aloud.",
-                  outcome: "More students participate and clarify ideas. Vocabulary and reasoning emerge before writing begins.",
-                  tradeoff: "Benefit: Stronger ideas. Risk: Time pressure later unless the talk step is tightly structured.",
-                  lensPrompt: "How does oral rehearsal support an oral to written progression? Where do you see access and identity support?"
-                },
-                {
-                  label: "C",
-                  title: "Model paragraph spotlight",
-                  text: "Analyze an annotated model paragraph first to clarify expectations.",
-                  outcome: "Students see academic features and structure. Some may imitate without fully understanding meaning.",
-                  tradeoff: "Benefit: Clear target. Risk: Students may copy form without building their own ideas.",
-                  lensPrompt: "How can a model support academic language without replacing student voice? What supports prevent formula only writing?"
-                }
-              ],
-              lensHints: {
-                title: "Lens Hints",
-                items: [
-                  "Gibbons focus: build meaning through talk, then guide students into more structured language.",
-                  "Hornberger focus: multiple entry points, participation pathways, and valuing linguistic resources.",
-                  "Ask: Who benefits from this move? Who might be excluded without additional supports?"
-                ]
-              }
-            },
-            {
-              scene: "Students now have ideas from discussion, but their drafts are still short and informal. Some students repeat the same simple sentence pattern. You want academic language without shutting down participation.",
-              artifact: "Fictional draft line: “I like the university because it is good and big.”\nPeer comment: “I do not know more words.”",
-              prompt: "What do you add before the next draft attempt?",
-              hint: "Pick a scaffold that supports academic language and keeps student meaning central",
-              choices: [
-                {
-                  label: "A",
-                  title: "Sentence frames and word bank",
-                  text: "Provide a targeted word bank plus flexible sentence frames for expansion.",
-                  outcome: "Students write longer and clearer sentences and begin using academic structures.",
-                  tradeoff: "Benefit: Language support. Risk: Can become formulaic unless students personalize ideas.",
-                  lensPrompt: "How do you keep frames supportive rather than restrictive? Which author helps you justify this scaffold?"
-                },
-                {
-                  label: "B",
-                  title: "Collaborative group drafting",
-                  text: "Assign roles and draft in groups to support idea development through talk.",
-                  outcome: "Ideas deepen and students learn from peers. Participation can be uneven without clear roles and accountability.",
-                  tradeoff: "Benefit: Peer language. Risk: Some voices disappear unless the structure protects participation.",
-                  lensPrompt: "How does group talk support learning through language? What participation supports align with Hornberger?"
-                },
-                {
-                  label: "C",
-                  title: "Mini lesson on academic features",
-                  text: "Teach one feature, like adding reasons and evidence, then return to writing.",
-                  outcome: "Writing gains focus and becomes more academic. Some students need examples and practice before applying.",
-                  tradeoff: "Benefit: Precision. Risk: Cognitive overload if the feature is taught without a visual support.",
-                  lensPrompt: "What visual element could reduce cognitive load? How does this connect to multimodality?"
-                }
-              ],
-              lensHints: {
-                title: "Lens Hints",
-                items: [
-                  "Use visuals: organizers, color coding, and examples can reduce cognitive load.",
-                  "Consider identity: let students bring culturally relevant examples to keep voice and meaning.",
-                  "Consider access: sentence frames can be differentiated rather than one size fits all."
-                ]
-              }
-            },
-            {
-              scene: "Students have a draft. Now you want critical thinking: revision and evaluation, not just editing. Some students think revision means fixing spelling only.",
-              artifact: "Fictional peer feedback: “Good.”\nStudent question: “Do I just correct spelling?”",
-              prompt: "How do you structure revision to increase critical thinking?",
-              hint: "Pick a move that makes revision about meaning, evidence, and clarity",
-              choices: [
-                {
-                  label: "A",
-                  title: "Revision checklist with categories",
-                  text: "Use a checklist for meaning, evidence, organization, and language, with examples.",
-                  outcome: "Students revise for ideas and structure, not only mechanics. They learn what counts as strong academic writing.",
-                  tradeoff: "Benefit: Clarity. Risk: Needs modeling so the checklist is used well.",
-                  lensPrompt: "How does explicit criteria support academic language development? How do you keep it accessible?"
-                },
-                {
-                  label: "B",
-                  title: "Peer review with structured prompts",
-                  text: "Students give feedback using sentence starters and targeted questions.",
-                  outcome: "Peer talk becomes substantive. Students practice academic discourse and critique respectfully.",
-                  tradeoff: "Benefit: Dialogic learning. Risk: Without guidance, feedback stays shallow.",
-                  lensPrompt: "How does structured talk support learning through language? What makes it equitable?"
-                },
-                {
-                  label: "C",
-                  title: "One on one conferences",
-                  text: "Brief teacher conferences focusing on one high impact revision goal.",
-                  outcome: "High quality feedback and personalized support. Time limits reduce how many students you can reach.",
-                  tradeoff: "Benefit: Precision support. Risk: Scalability and unequal access if time runs out.",
-                  lensPrompt: "How do you balance depth and access? What system could broaden participation?"
-                }
-              ],
-              lensHints: {
-                title: "Lens Hints",
-                items: [
-                  "Critical thinking grows when students evaluate and justify changes, not just correct errors.",
-                  "Use multimodality: annotate a draft with color coding, symbols, or a quick oral rehearsal before rewriting.",
-                  "Ask students to explain why they revised a sentence, using course concepts."
-                ]
-              }
-            }
-          ]
-        },
-        badges: ["Scaffold Architect", "Access Advocate"]
-      },
-      {
-        id: "maze",
-        title: "The Reading Barrier Maze",
-        emoji: "🧩",
-        sigil: "RB",
-        difficulty: 3,
-        tags: ["Reading", "Barriers and Bridges", "Transfer"],
-        blurb: "A text is blocking comprehension. Find bridges that support meaning and biliteracy.",
-        comingSoon: true
-      },
-      {
-        id: "puzzle",
-        title: "The Participation Puzzle",
-        emoji: "🗣️",
-        sigil: "PP",
-        difficulty: 2,
-        tags: ["Identity", "Access", "Group Work"],
-        blurb: "Some voices dominate. Some disappear. Design participation that is equitable.",
-        comingSoon: true
-      },
-      {
-        id: "remix",
-        title: "The Multimodal Remix Room",
-        emoji: "🎛️",
-        sigil: "MM",
-        difficulty: 1,
-        tags: ["Multimodality", "Meaning Making", "Design"],
-        blurb: "Turn a concept into a multimodal learning sequence without cognitive overload.",
-        comingSoon: true
-      }
-    ];
 
     const SPELLS = [
       {
@@ -951,13 +733,12 @@
         title:"Gibbons: Scaffold Spell",
         subtitle:"Oral to written progression",
         body:[
-          "Use talk to build meaning before expecting academic writing.",
           "Sequence supports: oral rehearsal, visual organization, then structured writing.",
           "Model, jointly construct, then release responsibility."
         ],
         prompts:[
           "How does your move build meaning before form?",
-          "What scaffold makes academic language visible and doable?",
+          "What scaffold makes academic language doable?",
           "How will you fade the scaffold over time?"
         ]
       },
@@ -966,14 +747,13 @@
         title:"Hornberger: Access Charm",
         subtitle:"Identity, access, participation",
         body:[
-          "Design for multiple entry points, not one pathway.",
-          "Value students’ linguistic resources as assets.",
-          "Participation structures are part of equity."
+          "Design multiple entry points for participation.",
+          "Value linguistic resources and protect student voice."
         ],
         prompts:[
           "Who gains access with this choice? Who might still be excluded?",
           "How does the choice affirm multilingual identity and voice?",
-          "What participation structure keeps the conversation equitable?"
+          "What participation structure makes this equitable?"
         ]
       },
       {
@@ -982,8 +762,7 @@
         subtitle:"Modes reinforce meaning",
         body:[
           "Pair oral, visual, and written modes to reduce cognitive load.",
-          "Use visuals to externalize thinking: diagrams, organizers, annotation.",
-          "Make transitions between modes explicit."
+          "Use visuals to externalize thinking (organizers, annotation, diagrams)."
         ],
         prompts:[
           "What visual element makes the next step clearer?",
@@ -994,17 +773,367 @@
       {
         id:"academic",
         title:"Academic Language Lens",
-        subtitle:"From everyday to disciplinary",
+        subtitle:"Everyday to disciplinary",
         body:[
-          "Teach language features as resources for meaning, not as rules only.",
-          "Connect vocabulary to function: explain, argue, compare, justify.",
-          "Use examples and sentence frames strategically."
+          "Teach language features as resources for meaning, not rules only.",
+          "Connect vocabulary to function: explain, argue, compare, justify."
         ],
         prompts:[
           "Which feature supports clarity and evidence here?",
           "How will you keep student voice while increasing formality?",
           "What scaffold supports transfer to new tasks?"
         ]
+      }
+    ];
+
+    // 4 playable missions, each with 3 rounds
+    const MISSIONS = [
+      {
+        id: "bridge",
+        title: "The Oral to Writing Bridge",
+        emoji: "🌉", sigil: "OW", difficulty: 2,
+        tags: ["Gibbons","Scaffolding","Writing"],
+        blurb: "Students speak well but struggle to write. Build a bridge from talk to text.",
+        scenarioTitle: "Mission: The Oral to Writing Bridge",
+        rounds: [
+          {
+            scene:"A glowing sign reads: Academic Paragraph Due. Students have strong ideas in discussion, but writing is short and vague. You have 45 minutes.",
+            artifact:"Student line: “I like the university because is big. It is good.”\nTeacher note: Talk is richer than drafts.",
+            prompt:"How do you start this lesson?",
+            hint:"Pick a first move that builds meaning before drafting",
+            lensHints:[
+              "Gibbons: build meaning through talk before demanding written form.",
+              "Hornberger: participation pathways and entry points matter.",
+              "Ask: who benefits, who might be left out?"
+            ],
+            choices:[
+              {label:"A",title:"Start writing immediately",text:"Draft right away with minimal scaffolding.",
+               outcome:"Some write quickly, but many freeze or produce shallow sentences.",
+               tradeoff:"Benefit: saves time. Risk: low access for students who need rehearsal or visuals.",
+               lensPrompt:"How does this impact access and the shift from oral to written language?"},
+              {label:"B",title:"Structured oral rehearsal",text:"Brief talk protocol with sentence starters.",
+               outcome:"More participation; ideas and vocabulary emerge before drafting.",
+               tradeoff:"Benefit: stronger meaning. Risk: time pressure later unless tight.",
+               lensPrompt:"How does oral rehearsal support the oral-to-written progression and equitable participation?"},
+              {label:"C",title:"Model paragraph spotlight",text:"Analyze a model paragraph for structure and features.",
+               outcome:"Expectations become clearer; some may imitate without meaning.",
+               tradeoff:"Benefit: clear target. Risk: form without voice unless guided.",
+               lensPrompt:"How do you use models without replacing student meaning and identity?"}
+            ]
+          },
+          {
+            scene:"Students have ideas, but drafts still sound informal and repetitive. They need academic language without losing voice.",
+            artifact:"Draft: “It is good because good teachers.”\nPeer: “I don’t know more words.”",
+            prompt:"What do you add before drafting again?",
+            hint:"Choose a scaffold that supports academic language",
+            lensHints:[
+              "Use visuals to reduce cognitive load (organizers, color coding).",
+              "Differentiate frames so they support rather than restrict.",
+              "Keep meaning central: students choose their own examples."
+            ],
+            choices:[
+              {label:"A",title:"Word bank + flexible sentence frames",text:"Targeted vocabulary and expandable frames.",
+               outcome:"Writing becomes longer and clearer; more academic structures appear.",
+               tradeoff:"Benefit: language support. Risk: formulaic writing if not personalized.",
+               lensPrompt:"How do you keep frames supportive and still protect student voice?"},
+              {label:"B",title:"Group drafting with roles",text:"Draft in groups to deepen ideas through talk.",
+               outcome:"Ideas deepen; peer language support grows; participation can be uneven.",
+               tradeoff:"Benefit: dialogic meaning-making. Risk: some voices disappear without structure.",
+               lensPrompt:"What participation structure makes collaboration equitable?"},
+              {label:"C",title:"Mini lesson on one writing feature",text:"Teach one feature (reasons/evidence), then apply.",
+               outcome:"Writing gains focus; some need examples and visual support to apply well.",
+               tradeoff:"Benefit: precision. Risk: overload if taught without a clear visual bridge.",
+               lensPrompt:"What multimodal support bridges the concept into writing?"}
+            ]
+          },
+          {
+            scene:"Drafts exist. Students think revision means spelling only. You want critique, reasoning, and stronger evidence.",
+            artifact:"Peer feedback: “Good.”\nStudent: “Do I just fix spelling?”",
+            prompt:"How do you structure revision for critical thinking?",
+            hint:"Choose a move that makes revision about meaning, evidence, clarity",
+            lensHints:[
+              "Revision = evaluating meaning + strengthening claims, not just editing.",
+              "Make criteria visible: examples, checklists, and modeled decisions.",
+              "Use talk to rehearse revision explanations before rewriting."
+            ],
+            choices:[
+              {label:"A",title:"Revision checklist with categories",text:"Meaning, evidence, organization, language, with examples.",
+               outcome:"Students revise ideas and structure, not only mechanics.",
+               tradeoff:"Benefit: clarity. Risk: needs modeling to be used well.",
+               lensPrompt:"How does explicit criteria support academic language and transfer?"},
+              {label:"B",title:"Structured peer review prompts",text:"Sentence starters + targeted questions for feedback.",
+               outcome:"Feedback becomes substantive; students practice academic discourse.",
+               tradeoff:"Benefit: dialogic learning. Risk: shallow feedback without guidance.",
+               lensPrompt:"How does structured talk expand access and participation?"},
+              {label:"C",title:"Quick teacher conferences",text:"1–2 minute conferences focusing on one revision goal.",
+               outcome:"High impact feedback; not everyone gets equal time.",
+               tradeoff:"Benefit: precision. Risk: access and scalability constraints.",
+               lensPrompt:"How do you protect access when time is limited?"}
+            ]
+          }
+        ],
+        badges: ["Scaffold Architect","Access Advocate"]
+      },
+
+      {
+        id: "maze",
+        title: "The Reading Barrier Maze",
+        emoji: "🧭", sigil: "RB", difficulty: 3,
+        tags: ["Reading","Comprehension","Bridges"],
+        blurb: "A dense text blocks comprehension. Find bridges that support meaning and transfer.",
+        scenarioTitle: "Mission: The Reading Barrier Maze",
+        rounds: [
+          {
+            scene:"Students must read a dense academic text. Many can decode words but struggle to construct meaning and discuss it.",
+            artifact:"Student note: “I read it but I don’t understand what it means.”",
+            prompt:"How do you open the reading task?",
+            hint:"Choose a move that builds a shared purpose for reading",
+            lensHints:[
+              "Multimodality can anchor meaning: visuals, headings, key terms.",
+              "Access increases when the task has clear roles and supports.",
+              "Meaning first, then language precision."
+            ],
+            choices:[
+              {label:"A",title:"Cold read then quiz",text:"Students read silently and answer comprehension questions.",
+               outcome:"A few succeed; many disengage or guess.",
+               tradeoff:"Benefit: speed. Risk: low meaning-making and limited access.",
+               lensPrompt:"What does this assume about prior knowledge and language resources?"},
+              {label:"B",title:"Guided preview + purpose",text:"Preview headings, key terms, and set a purpose question.",
+               outcome:"Students read with direction; comprehension improves.",
+               tradeoff:"Benefit: clarity. Risk: needs a tight plan to avoid over-scaffolding.",
+               lensPrompt:"How does this reduce cognitive load and support access?"},
+              {label:"C",title:"Jigsaw roles + talk first",text:"Assign roles (summarizer, connector, questioner) before reading.",
+               outcome:"Talk creates a reason to read; participation increases.",
+               tradeoff:"Benefit: dialogic learning. Risk: uneven roles unless structured.",
+               lensPrompt:"How do roles protect equitable participation?"}
+            ]
+          },
+          {
+            scene:"Students understand parts, but struggle to connect ideas across paragraphs. You want synthesis, not isolated facts.",
+            artifact:"Student highlight: many words highlighted, little summary.",
+            prompt:"How do you support synthesis?",
+            hint:"Pick a visual or dialogic bridge across ideas",
+            lensHints:[
+              "Use a visual organizer to map relationships (claim, evidence, implication).",
+              "Talk can rehearse synthesis before writing it.",
+              "Keep the organizer simple and purposeful."
+            ],
+            choices:[
+              {label:"A",title:"Concept map organizer",text:"Students map claims and evidence visually.",
+               outcome:"Connections become visible; students synthesize more effectively.",
+               tradeoff:"Benefit: strong meaning-making. Risk: can get messy without modeling.",
+               lensPrompt:"How does a visual element support comprehension and biliteracy?"},
+              {label:"B",title:"Sentence frames for synthesis",text:"Provide frames that require linking ideas (however, therefore).",
+               outcome:"Students make connections in writing with clearer structure.",
+               tradeoff:"Benefit: functional language. Risk: needs examples to avoid robotic use.",
+               lensPrompt:"How do frames support academic function and student voice?"},
+              {label:"C",title:"Teacher summary then discussion",text:"Teacher summarizes key points, then students discuss.",
+               outcome:"More students can participate, but less independent synthesis occurs.",
+               tradeoff:"Benefit: access. Risk: reduced student agency if overused.",
+               lensPrompt:"Where is the balance between access support and learner agency?"}
+            ]
+          },
+          {
+            scene:"Now students must produce an analytic response. You want them to justify claims with evidence from the text.",
+            artifact:"Student draft: “The author is right.” (no evidence)",
+            prompt:"How do you raise the level of critical thinking?",
+            hint:"Choose a structure that forces evidence-based justification",
+            lensHints:[
+              "Make criteria visible: what counts as evidence and why.",
+              "Use peer critique with prompts to demand justification.",
+              "Require a ‘why’ and a ‘because’ supported by text."
+            ],
+            choices:[
+              {label:"A",title:"Claim–Evidence–Reasoning template",text:"Students fill a structured CER template.",
+               outcome:"Evidence use improves; reasoning becomes explicit.",
+               tradeoff:"Benefit: clarity. Risk: can feel constrained unless flexible.",
+               lensPrompt:"How does structure support reasoning while still allowing voice?"},
+              {label:"B",title:"Peer challenge protocol",text:"Peers must ask: “What’s your evidence?” and “Why does it matter?”",
+               outcome:"Students strengthen arguments; discussion becomes analytic.",
+               tradeoff:"Benefit: dialogic critique. Risk: needs norms for respectful talk.",
+               lensPrompt:"How does structured dialogue build critical thinking and participation?"},
+              {label:"C",title:"Rubric exemplars",text:"Show two exemplar responses and analyze why one is stronger.",
+               outcome:"Students internalize criteria and revise toward stronger evidence use.",
+               tradeoff:"Benefit: clear target. Risk: may imitate unless asked to adapt.",
+               lensPrompt:"How do exemplars support learning without producing copy-only responses?"}
+            ]
+          }
+        ],
+        badges: ["Barrier Breaker","Mode Mixer"]
+      },
+
+      {
+        id: "puzzle",
+        title: "The Participation Puzzle",
+        emoji: "🗣️", sigil: "PP", difficulty: 2,
+        tags: ["Identity","Access","Dialogue"],
+        blurb: "Some voices dominate and others disappear. Design equitable participation.",
+        scenarioTitle: "Mission: The Participation Puzzle",
+        rounds: [
+          {
+            scene:"In online discussions, a few students post early and dominate. Others post late or not at all. You want dialogic exchange, not isolated posts.",
+            artifact:"Thread pattern: 5 students post 80% of replies; many posts are “I agree.”",
+            prompt:"How do you redesign discussion to increase dialogue?",
+            hint:"Choose a structure that produces back-and-forth exchange",
+            lensHints:[
+              "Participation structures are equity structures.",
+              "Make interaction requirements visible and doable.",
+              "Use prompts that force application, not opinion only."
+            ],
+            choices:[
+              {label:"A",title:"Keep as-is, add word count",text:"Require 250 words and 2 replies.",
+               outcome:"Posts get longer, but dialogue quality may not improve.",
+               tradeoff:"Benefit: easy to implement. Risk: longer but still shallow interaction.",
+               lensPrompt:"Why might more words not equal more thinking or access?"},
+              {label:"B",title:"Role-based discussion circles",text:"Assign roles (connector, challenger, summarizer) weekly.",
+               outcome:"Replies become purposeful and varied; more students have entry points.",
+               tradeoff:"Benefit: higher dialogue quality. Risk: needs clear role guidance.",
+               lensPrompt:"How do roles support equitable participation and identity safety?"},
+              {label:"C",title:"Structured response prompts",text:"Require evidence-based replies with sentence starters.",
+               outcome:"Replies become more analytic and tied to readings.",
+               tradeoff:"Benefit: academic discourse. Risk: can feel rigid unless flexible.",
+               lensPrompt:"How do you balance structure with student voice?"}
+            ]
+          },
+          {
+            scene:"Some students feel uncertain about language accuracy and avoid posting. You want access without lowering rigor.",
+            artifact:"Student message: “I’m afraid my English/Spanish is not perfect, so I don’t post.”",
+            prompt:"What support increases access and keeps rigor?",
+            hint:"Choose a move that lowers risk but preserves thinking demands",
+            lensHints:[
+              "Access can mean multiple modalities: audio, visuals, bilingual resources.",
+              "Rigor can be in reasoning, not perfect grammar.",
+              "Normalize drafting and revision."
+            ],
+            choices:[
+              {label:"A",title:"Allow audio replies with transcript",text:"Students can reply with short audio plus a transcript.",
+               outcome:"Participation increases and ideas become richer.",
+               tradeoff:"Benefit: access. Risk: needs clear instructions for accessibility.",
+               lensPrompt:"How does multimodality increase access while supporting academic discourse?"},
+              {label:"B",title:"Bilingual planning allowed",text:"Students can plan ideas bilingually, then post in target language.",
+               outcome:"Stronger ideas and confidence; better content quality.",
+               tradeoff:"Benefit: identity affirming. Risk: needs boundaries to meet course goals.",
+               lensPrompt:"How does this align with biliteracy development and Hornberger?"},
+              {label:"C",title:"Grammar-first requirement",text:"Students must have near-perfect language accuracy.",
+               outcome:"Some improve accuracy; many participate less and focus on form over meaning.",
+               tradeoff:"Benefit: accuracy focus. Risk: reduced access and reduced critical thinking.",
+               lensPrompt:"What gets lost when form becomes the main gatekeeper?"}
+            ]
+          },
+          {
+            scene:"Now you want students to demonstrate critical thinking: challenge ideas, connect theory, and propose implications.",
+            artifact:"Most replies: “Great point!” with no citation or application.",
+            prompt:"How do you raise the level of thinking?",
+            hint:"Choose a move that forces theory-based application",
+            lensHints:[
+              "Require students to apply a theory lens, not just agree/disagree.",
+              "Use a “claim + warrant” structure tied to readings.",
+              "Make the grading criteria visible."
+            ],
+            choices:[
+              {label:"A",title:"Theory lens requirement",text:"Each reply must apply one author and explain relevance.",
+               outcome:"Replies become analytic and grounded in readings.",
+               tradeoff:"Benefit: rigor. Risk: needs clear examples so it’s not name-dropping.",
+               lensPrompt:"How do you turn theory into reasoning rather than citations only?"},
+              {label:"B",title:"Peer critique protocol",text:"Students must respectfully challenge one assumption with evidence.",
+               outcome:"Dialogue becomes real; students practice academic critique.",
+               tradeoff:"Benefit: critical thinking. Risk: needs norms to protect community.",
+               lensPrompt:"How do norms and structure support identity-safe critique?"},
+              {label:"C",title:"Case application prompt",text:"Each student applies discussion ideas to a classroom case.",
+               outcome:"Strong transfer and relevance; posts show applied reasoning.",
+               tradeoff:"Benefit: application. Risk: needs a good case library or student choice.",
+               lensPrompt:"How does application demonstrate deeper understanding and transfer?"}
+            ]
+          }
+        ],
+        badges: ["Access Advocate","Theory Tactician"]
+      },
+
+      {
+        id: "remix",
+        title: "The Multimodal Remix Room",
+        emoji: "🎛️", sigil: "MM", difficulty: 1,
+        tags: ["Multimodality","Design","Online"],
+        blurb: "Design a low-friction multimodal assessment that increases critical thinking.",
+        scenarioTitle: "Mission: The Multimodal Remix Room",
+        rounds: [
+          {
+            scene:"You need to replace a discussion tool with something simple but more engaging. The goal is dialogic exchange and multimodal meaning-making.",
+            artifact:"Constraint: must be low-cost, easy to access, and clearly tied to course objectives.",
+            prompt:"What is your base format?",
+            hint:"Choose a format that supports interaction and multimodality",
+            lensHints:[
+              "Choose the smallest tech that achieves the learning goal.",
+              "Multimodality should reduce friction, not add it.",
+              "Make the interaction requirement explicit."
+            ],
+            choices:[
+              {label:"A",title:"Canvas discussion only",text:"Text posts + replies in Canvas.",
+               outcome:"Reliable and simple, but can become repetitive without structure.",
+               tradeoff:"Benefit: access. Risk: low novelty and weak multimodality.",
+               lensPrompt:"What design features would increase dialogue and critical thinking?"},
+              {label:"B",title:"Image-annotated discussion",text:"Students annotate an image/diagram and respond.",
+               outcome:"More concrete talk; meaning anchored to visuals.",
+               tradeoff:"Benefit: multimodal meaning. Risk: needs clear prompts and accessibility (alt text).",
+               lensPrompt:"How do visuals increase critical thinking rather than decoration?"},
+              {label:"C",title:"Short audio micro-dialogue",text:"Students post short audio + key points in text.",
+               outcome:"Richer expression and tone; more conversational dialogue.",
+               tradeoff:"Benefit: access and engagement. Risk: needs structure and accessibility.",
+               lensPrompt:"How do you ensure equitable participation and assessment clarity?"}
+            ]
+          },
+          {
+            scene:"You want critical thinking. Students must evaluate, compare, and justify, not just share opinions.",
+            artifact:"Goal: students must use readings to make a decision and defend it.",
+            prompt:"What thinking task do you require?",
+            hint:"Choose a task that forces evaluation and justification",
+            lensHints:[
+              "Use compare/contrast, decision-making, critique, or redesign.",
+              "Require evidence from readings and implications for practice.",
+              "Make the criteria visible."
+            ],
+            choices:[
+              {label:"A",title:"Compare two approaches",text:"Students compare two strategies and argue for one in context.",
+               outcome:"Clear analytic structure; encourages evidence-based reasoning.",
+               tradeoff:"Benefit: strong critical thinking. Risk: needs well-defined approaches or options.",
+               lensPrompt:"How do you connect comparison to real teaching decisions?"},
+              {label:"B",title:"Critique an example",text:"Students critique a sample activity and propose revisions.",
+               outcome:"Students practice evaluation and redesign.",
+               tradeoff:"Benefit: authentic design thinking. Risk: needs a good sample and guidance.",
+               lensPrompt:"How does redesign show transfer and deeper understanding?"},
+              {label:"C",title:"Create then justify",text:"Students create a mini plan and justify each design choice.",
+               outcome:"High transfer and ownership; strong alignment to practice.",
+               tradeoff:"Benefit: synthesis. Risk: time demands if not bounded.",
+               lensPrompt:"How do you keep it bounded and still rigorous?"}
+            ]
+          },
+          {
+            scene:"Now you need a grading approach that rewards reasoning and multimodal design, not just polish.",
+            artifact:"Student concern: “Do I lose points if my visuals aren’t fancy?”",
+            prompt:"What grading criteria do you emphasize?",
+            hint:"Choose criteria that reward thinking, not aesthetics",
+            lensHints:[
+              "Grade reasoning, alignment, and accessibility over visual flair.",
+              "Include theory integration and clarity of interaction.",
+              "Make expectations transparent."
+            ],
+            choices:[
+              {label:"A",title:"Reasoning-first rubric",text:"Theory use + justification + alignment are highest weight.",
+               outcome:"Students focus on thinking and application.",
+               tradeoff:"Benefit: fairness. Risk: must define what counts as strong justification.",
+               lensPrompt:"How do you describe excellent reasoning in student-friendly terms?"},
+              {label:"B",title:"Design-first rubric",text:"Visual polish and creativity are highest weight.",
+               outcome:"Some beautiful work; can disadvantage students with less design experience.",
+               tradeoff:"Benefit: aesthetics. Risk: inequity and reduced focus on learning goals.",
+               lensPrompt:"How does this choice affect access and participation?"},
+              {label:"C",title:"Balanced rubric + accessibility",text:"Reasoning and design both matter; accessibility is required.",
+               outcome:"Students build functional multimodal work and defend choices.",
+               tradeoff:"Benefit: well-rounded. Risk: needs concise rubric language to avoid confusion.",
+               lensPrompt:"How do you keep the rubric simple and aligned to objectives?"}
+            ]
+          }
+        ],
+        badges: ["Mode Mixer","Critical Connector"]
       }
     ];
 
@@ -1088,7 +1217,7 @@
     function updatePlayerPanel(){
       xpVal.textContent = STATE.xp;
       badgeVal.textContent = STATE.badges.length;
-      const level = 1 + Math.floor(STATE.xp / 60);
+      const level = 1 + Math.floor(STATE.xp / 80);
       levelPill.textContent = "Level " + level;
 
       badgesList.innerHTML = "";
@@ -1113,7 +1242,6 @@
         const div = document.createElement("div");
         div.className = "mission";
         const stars = "★".repeat(m.difficulty) + "☆".repeat(Math.max(0,3-m.difficulty));
-        const coming = m.comingSoon;
 
         div.innerHTML = `
           <div class="missionTop">
@@ -1121,25 +1249,20 @@
               <div class="missionTitle">${m.title}</div>
               <div class="tagRow">
                 ${(m.tags||[]).slice(0,3).map(t=> `<span class="tag ${t==="Gibbons"||t==="Multimodality" ? "tagGold" : "tagDark"}">${t}</span>`).join("")}
-                ${coming ? `<span class="tag tagGreen">Coming soon</span>` : ``}
               </div>
             </div>
-            <div class="difficulty">
-              <span class="stars">${stars}</span>
-            </div>
+            <div class="difficulty"><span class="stars">${stars}</span></div>
           </div>
 
           <div class="missionArt">
-            <div class="sigil">${m.sigil || "Q"}</div>
-            <div class="emoji">${m.emoji || "🗝️"}</div>
-            <div class="caption">${m.blurb || ""}</div>
+            <div class="sigil">${m.sigil}</div>
+            <div class="emoji">${m.emoji}</div>
+            <div class="caption">${m.blurb}</div>
           </div>
 
           <div class="missionBottom">
             <div class="difficulty"><span>Difficulty</span><span class="stars">${stars}</span></div>
-            <button class="btn ${coming ? "" : "btnGold"}" ${coming ? "disabled style='opacity:.55; cursor:not-allowed'" : ""} data-mission="${m.id}">
-              ${coming ? "Locked" : "Play Mission"}
-            </button>
+            <button type="button" class="btn btnGold" data-mission="${m.id}">Play Mission</button>
           </div>
         `;
         missionsEl.appendChild(div);
@@ -1156,11 +1279,10 @@
     function currentMission(){
       return MISSIONS.find(m=> m.id === STATE.missionId);
     }
-
     function roundData(){
       const m = currentMission();
-      if(!m || !m.scenario) return null;
-      return m.scenario.rounds[STATE.round];
+      if(!m) return null;
+      return m.rounds[STATE.round];
     }
 
     function startMission(missionId){
@@ -1179,6 +1301,7 @@
       renderRound();
       updateLog();
       updatePlayerPanel();
+      window.scrollTo({top:0, behavior:"smooth"});
     }
 
     function renderRound(){
@@ -1186,8 +1309,8 @@
       const r = roundData();
       if(!m || !r) return;
 
-      scenarioTitle.textContent = m.scenario.title;
-      roundPill.textContent = "Round " + (STATE.round + 1) + " of " + m.scenario.rounds.length;
+      scenarioTitle.textContent = m.scenarioTitle;
+      roundPill.textContent = "Round " + (STATE.round + 1) + " of " + m.rounds.length;
 
       scenarioScene.textContent = r.scene;
       scenarioArtifact.textContent = r.artifact;
@@ -1225,8 +1348,8 @@
       lensPrompt.textContent = c.lensPrompt;
 
       lensPop.innerHTML = `
-        <strong>${r.lensHints.title}</strong>
-        <ul>${r.lensHints.items.map(x=> `<li>${x}</li>`).join("")}</ul>
+        <strong>Lens Hints</strong>
+        <ul>${r.lensHints.map(x=> `<li>${x}</li>`).join("")}</ul>
       `;
 
       resultArea.classList.remove("hidden");
@@ -1249,13 +1372,19 @@
         lensPop.style.display = lensPop.style.display === "block" ? "none" : "block";
       };
 
-      btnNext.onclick = ()=>{
-        goNextRound();
-      };
+      btnNext.onclick = ()=> goNextRound();
 
-      btnSaveJustification.onclick = ()=>{
-        saveJustification(entry);
-      };
+      btnSaveJustification.onclick = ()=> saveJustification(entry);
+    }
+
+    function containsTheory(text){
+      const t = text.toLowerCase();
+      return t.includes("gibbons") || t.includes("hornberger") || t.includes("multimodal") || t.includes("academic") || t.includes("scaffold");
+    }
+
+    function addXP(amount){
+      STATE.xp += amount;
+      updatePlayerPanel();
     }
 
     function saveJustification(entry){
@@ -1265,11 +1394,7 @@
         return;
       }
 
-      const saved = {
-        round: entry.round,
-        text
-      };
-
+      const saved = { round: entry.round, text };
       const i = STATE.savedJustifications.findIndex(x=> x.round === saved.round);
       if(i >= 0) STATE.savedJustifications[i] = saved;
       else STATE.savedJustifications.push(saved);
@@ -1284,21 +1409,11 @@
       setStep(Math.max(STATE.step, 2));
     }
 
-    function containsTheory(text){
-      const t = text.toLowerCase();
-      return t.includes("gibbons") || t.includes("hornberger") || t.includes("multimodal") || t.includes("academic") || t.includes("scaffold");
-    }
-
-    function addXP(amount){
-      STATE.xp += amount;
-      updatePlayerPanel();
-    }
-
     function goNextRound(){
       const m = currentMission();
       if(!m) return;
 
-      if(STATE.round < m.scenario.rounds.length - 1){
+      if(STATE.round < m.rounds.length - 1){
         STATE.round += 1;
         renderRound();
         updateLog();
@@ -1314,14 +1429,8 @@
 
       const usedTheory = STATE.savedJustifications.some(j => containsTheory(j.text));
       const badgePicks = [];
-
-      if(m.badges && m.badges.length){
-        badgePicks.push(m.badges[0]);
-        if(usedTheory) badgePicks.push(m.badges[1] || "Theory Tactician");
-      } else {
-        badgePicks.push("Quest Finisher");
-        if(usedTheory) badgePicks.push("Theory Tactician");
-      }
+      badgePicks.push(m.badges?.[0] || "Quest Finisher");
+      if(usedTheory) badgePicks.push(m.badges?.[1] || "Theory Tactician");
 
       badgePicks.forEach(b=>{
         if(!STATE.badges.includes(b)) STATE.badges.push(b);
@@ -1337,8 +1446,8 @@
       screenSpellbook.classList.add("hidden");
 
       badgeSummary.textContent = "Badges " + STATE.badges.length;
-
       showToast("Quest complete");
+      window.scrollTo({top:0, behavior:"smooth"});
     }
 
     function updateLog(){
@@ -1346,7 +1455,7 @@
       const title = m ? m.title : "No mission selected";
       const lines = [];
 
-      lines.push("BILITERACY QUEST DECISION PATH SCROLL");
+      lines.push("THE BILITERACY QUEST – DECISION PATH SCROLL");
       lines.push("Mission: " + title);
       lines.push("");
 
@@ -1392,9 +1501,9 @@
       navigator.clipboard.writeText(text).then(()=> showToast("Copied"));
     }
 
+    // Buttons
     btnCopyLog.addEventListener("click", ()=> copyText(logText.textContent));
     btnFinish.addEventListener("click", ()=> finishMission());
-
     btnCopyAll.addEventListener("click", ()=> copyText(logText.textContent));
 
     btnStart.addEventListener("click", ()=>{
@@ -1436,6 +1545,7 @@
       screenSubmit.classList.add("hidden");
       screenSpellbook.classList.add("hidden");
       showToast("Reset");
+      window.scrollTo({top:0, behavior:"smooth"});
     }
 
     function renderSpellbook(){
@@ -1449,14 +1559,14 @@
               <h4>${sp.title}</h4>
               <small>${sp.subtitle}</small>
             </div>
-            <button class="miniBtn" data-open="${sp.id}">Open</button>
+            <button type="button" class="miniBtn" data-open="${sp.id}">Open</button>
           </div>
           <div class="spellBody" id="body_${sp.id}">
             <p>${sp.body.join(" ")}</p>
             <ul>${sp.prompts.map(p=> `<li>${p}</li>`).join("")}</ul>
             <div class="spellActions">
-              <button class="miniBtn miniBtnGold" data-apply="${sp.id}">Apply Spell</button>
-              <button class="miniBtn" data-close="${sp.id}">Close</button>
+              <button type="button" class="miniBtn miniBtnGold" data-apply="${sp.id}">Apply Spell</button>
+              <button type="button" class="miniBtn" data-close="${sp.id}">Close</button>
             </div>
           </div>
         `;
@@ -1492,7 +1602,7 @@
       });
     }
 
-    // Allow clicking checkpoints to jump to screens
+    // Checkpoint navigation (simple)
     questMap.querySelectorAll(".checkpoint").forEach(cp=>{
       cp.addEventListener("click", ()=>{
         const s = Number(cp.dataset.step);
