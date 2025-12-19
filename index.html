@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Biliteracy Quest: The Pedagogy Dungeon</title>
+  <style>
+    :root{
+      --mizzou-gold:#F1B82D;
+      --mizzou-black:#000000;
+      --ink:#111;
+      --paper:#ffffff;
+      --soft:#f6f6f8;
+      --soft2:#f1f3f7;
+      --muted:#5b616e;
+      --line:#e6e7eb;
+      --success:#0b7a3b;
+      --warn:#8a5a00;
+      --accent:#1b1b1b;
+      --shadow: 0 12px 30px rgba(0,0,0,.10);
+      --shadow2: 0 10px 22px rgba(0,0,0,.08);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 700px at 10% 0%, rgba(241,184,45,.22), transparent 60%),
+        radial-gradient(900px 600px at 90% 10%, rgba(0,0,0,.10), transparent 55%),
+        linear-gradient(180deg, #fff 0%, #fbfbfd 60%, #fff 100%);
+      min-height:100vh;
+    }
+
+    .wrap{max-width:1180px; margin:0 auto; padding:22px 18px 40px;}
+    .topbar{
+      display:flex; gap:16px; align-items:stretch; justify-content:space-between;
+      padding:16px; border-radius:var(--radius);
+      background:linear-gradient(135deg, rgba(0,0,0,.95), rgba(0,0,0,.86));
+      color:#fff; box-shadow:var(--shadow);
+      border:1px solid rgba(241,184,45,.35);
+    }
+    .brand{display:flex; flex-direction:column; gap:6px;}
+    .brand h1{
+      margin:0; font-size:20px; letter-spacing:.2px;
+      display:flex; gap:10px; align-items:center; line-height:1.15;
+    }
+    .badgeLogo{
+      width:34px; height:34px; border-radius:12px;
+      background:conic-gradient(from 180deg, var(--mizzou-gold), #ffd86a, var(--mizzou-gold));
+      display:grid; place-items:center; color:#000; font-weight:900;
+      box-shadow:0 10px 20px rgba(241,184,45,.22);
+    }
+    .brand p{margin:0; color:rgba(255,255,255,.78); font-size:13px; max-width:560px;}
+    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+    .btn{
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.08);
+      color:#fff; padding:10px 12px; border-radius:14px;
+      font-weight:650; font-size:13px; cursor:pointer;
+      display:inline-flex; align-items:center; gap:10px;
+      transition:transform .08s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .btn:hover{background:rgba(255,255,255,.12)}
+    .btn:active{transform:translateY(1px)}
+    .btnGold{
+      background:linear-gradient(180deg, var(--mizzou-gold), #e9ab10);
+      color:#111; border-color:rgba(0,0,0,.12);
+    }
+    .btnGold:hover{background:linear-gradient(180deg, #ffd35f, var(--mizzou-gold))}
+    .btnGhost{background:transparent}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:999px;
+      background:rgba(241,184,45,.13);
+      border:1px solid rgba(241,184,45,.35);
+      color:#fff; font-size:12px;
+    }
+    .dot{width:8px; height:8px; border-radius:999px; background:var(--mizzou-gold); box-shadow:0 0 0 3px rgba(241,184,45,.18);}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:16px;
+      margin-top:16px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+      .actions{justify-content:flex-start}
+    }
+
+    .card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow2);
+      overflow:hidden;
+    }
+    .cardHeader{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, #fff, var(--soft));
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .cardHeader h2{margin:0; font-size:15px;}
+    .cardBody{padding:16px;}
+
+    .playerPanel{
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .statRow{display:flex; gap:10px; flex-wrap:wrap;}
+    .stat{
+      flex:1;
+      min-width:140px;
+      background:linear-gradient(180deg, #fff, var(--soft));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:10px 12px;
+    }
+    .stat .k{font-size:11px; color:var(--muted); margin-bottom:6px;}
+    .stat .v{font-size:16px; font-weight:800;}
+    .progressWrap{
+      margin-top:2px;
+      height:10px; background:var(--soft2); border-radius:999px; overflow:hidden;
+      border:1px solid var(--line);
+    }
+    .progressBar{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, var(--mizzou-gold), #ffd86a);
+      transition:width .35s ease;
+    }
+    .tiny{font-size:12px; color:var(--muted); margin:0;}
+
+    .questMap{
+      display:grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap:10px;
+      padding:14px 16px;
+      background:linear-gradient(180deg, #fff, var(--soft));
+      border-bottom:1px solid var(--line);
+    }
+    @media (max-width: 680px){
+      .questMap{grid-template-columns:1fr; }
+    }
+    .checkpoint{
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      padding:10px 10px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      cursor:pointer;
+      transition:transform .08s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .checkpoint:hover{border-color:#d6d7dc; box-shadow:0 10px 20px rgba(0,0,0,.06)}
+    .checkpoint:active{transform:translateY(1px)}
+    .checkpoint .left{display:flex; align-items:center; gap:10px;}
+    .bubble{
+      width:28px; height:28px; border-radius:12px;
+      display:grid; place-items:center;
+      background:rgba(241,184,45,.18);
+      border:1px solid rgba(241,184,45,.35);
+      font-weight:900;
+    }
+    .checkpoint.done .bubble{background:rgba(11,122,59,.14); border-color:rgba(11,122,59,.35)}
+    .checkpoint.active{border-color:rgba(241,184,45,.55)}
+    .checkpoint small{color:var(--muted)}
+    .checkMark{font-weight:900; color:var(--success); display:none;}
+    .checkpoint.done .checkMark{display:inline}
+
+    .missions{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 680px){
+      .missions{grid-template-columns:1fr;}
+    }
+    .mission{
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,var(--soft));
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:230px;
+    }
+    .missionTop{
+      padding:12px 12px 10px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    .missionTitle{margin:0; font-size:14px; font-weight:900;}
+    .tagRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+    .tag{
+      font-size:11px; padding:6px 8px; border-radius:999px;
+      background:rgba(0,0,0,.06); color:#222; border:1px solid rgba(0,0,0,.07);
+    }
+    .tagGold{background:rgba(241,184,45,.22); border-color:rgba(241,184,45,.40)}
+    .tagDark{background:rgba(0,0,0,.08)}
+    .tagGreen{background:rgba(11,122,59,.12); border-color:rgba(11,122,59,.24)}
+    .missionArt{
+      height:110px;
+      margin:0 12px 10px;
+      border-radius:16px;
+      background:
+        radial-gradient(180px 120px at 20% 35%, rgba(241,184,45,.55), transparent 60%),
+        radial-gradient(220px 140px at 80% 10%, rgba(0,0,0,.18), transparent 65%),
+        linear-gradient(135deg, rgba(0,0,0,.92), rgba(0,0,0,.72));
+      border:1px solid rgba(241,184,45,.25);
+      position:relative;
+      overflow:hidden;
+    }
+    .missionArt .emoji{
+      position:absolute; inset:auto 14px 12px auto;
+      font-size:34px;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.45));
+    }
+    .missionArt .sigil{
+      position:absolute; left:14px; top:14px;
+      width:42px; height:42px; border-radius:16px;
+      background:conic-gradient(from 180deg, var(--mizzou-gold), #ffd86a, var(--mizzou-gold));
+      display:grid; place-items:center; font-weight:1000; color:#000;
+      box-shadow:0 12px 26px rgba(241,184,45,.20);
+    }
+    .missionArt .caption{
+      position:absolute; left:14px; bottom:14px; right:14px;
+      color:rgba(255,255,255,.88);
+      font-size:12px;
+      line-height:1.3;
+    }
+    .missionBottom{
+      padding:0 12px 12px;
+      margin-top:auto;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .difficulty{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px;}
+    .stars{letter-spacing:2px; color:var(--mizzou-gold); text-shadow:0 8px 14px rgba(241,184,45,.15);}
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .panelHeader{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, #fff, var(--soft));
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .panelHeader h3{margin:0; font-size:14px;}
+    .panelBody{padding:16px;}
+    .scene{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    @media (max-width: 860px){
+      .scene{grid-template-columns:1fr;}
+    }
+    .sceneBox{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+    }
+    .sceneBox h4{margin:0 0 8px; font-size:13px;}
+    .sceneBox p{margin:0; color:#222; line-height:1.45; font-size:13px;}
+    .artifact{
+      border:1px solid rgba(241,184,45,.35);
+      border-radius:16px;
+      background:
+        radial-gradient(160px 120px at 15% 20%, rgba(241,184,45,.35), transparent 65%),
+        linear-gradient(135deg, #111, #2a2a2a);
+      color:#fff;
+      padding:12px;
+      position:relative;
+      min-height:130px;
+      overflow:hidden;
+    }
+    .artifact .label{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:11px;
+      padding:6px 8px;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+    }
+    .artifact .paper{
+      margin-top:10px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:14px;
+      padding:10px;
+      font-size:12px;
+      line-height:1.35;
+      color:rgba(255,255,255,.90);
+    }
+
+    .choices{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin:12px 0 10px;
+    }
+    @media (max-width: 860px){
+      .choices{grid-template-columns:1fr;}
+    }
+    .choice{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+      cursor:pointer;
+      transition:transform .08s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+      display:flex; flex-direction:column; gap:10px;
+      min-height:110px;
+    }
+    .choice:hover{border-color:rgba(241,184,45,.55); box-shadow:0 12px 20px rgba(0,0,0,.06); background:linear-gradient(180deg,#fff,rgba(241,184,45,.08))}
+    .choice:active{transform:translateY(1px)}
+    .choice .cap{font-weight:900; font-size:12px; display:flex; justify-content:space-between; gap:10px;}
+    .choice .cap span{color:var(--muted); font-weight:800}
+    .choice p{margin:0; font-size:12.5px; color:#222; line-height:1.35;}
+
+    .resultGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 860px){
+      .resultGrid{grid-template-columns:1fr;}
+    }
+    .result{
+      border-radius:16px;
+      border:1px solid var(--line);
+      padding:12px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+    }
+    .result h4{margin:0 0 6px; font-size:12.5px}
+    .result p{margin:0; color:#222; font-size:12.5px; line-height:1.4}
+    .result .hint{margin-top:8px; color:var(--muted); font-size:12px}
+
+    .lensRow{
+      display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;
+      align-items:center;
+    }
+    .lensBtn{
+      border-radius:999px;
+      padding:8px 10px;
+      border:1px solid rgba(241,184,45,.40);
+      background:rgba(241,184,45,.18);
+      cursor:pointer;
+      font-weight:850;
+      font-size:12px;
+      display:inline-flex; gap:8px; align-items:center;
+      transition:transform .08s ease, background .2s ease;
+    }
+    .lensBtn:hover{background:rgba(241,184,45,.25)}
+    .lensBtn:active{transform:translateY(1px)}
+    .lensPop{
+      margin-top:10px;
+      border:1px solid rgba(241,184,45,.40);
+      background:linear-gradient(180deg, rgba(241,184,45,.14), rgba(241,184,45,.06));
+      border-radius:16px;
+      padding:12px;
+      display:none;
+    }
+    .lensPop strong{display:block; margin-bottom:6px}
+    .lensPop ul{margin:0; padding-left:18px; color:#222; font-size:12.5px; line-height:1.45}
+    .lensPop li{margin:4px 0}
+
+    .inputBox{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      resize:vertical;
+      min-height:90px;
+      font-size:13px;
+      line-height:1.4;
+      outline:none;
+    }
+    textarea:focus{border-color:rgba(241,184,45,.60); box-shadow:0 0 0 4px rgba(241,184,45,.18)}
+    .row{
+      display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .note{font-size:12px; color:var(--muted); margin:0;}
+    .pill{
+      border-radius:999px; padding:7px 10px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,var(--soft));
+      font-size:12px;
+      display:inline-flex; gap:8px; align-items:center;
+    }
+
+    .spellbook{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+    }
+    @media (max-width: 680px){
+      .spellbook{grid-template-columns:1fr;}
+    }
+    .spell{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .spellTop{
+      padding:12px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+      border-bottom:1px solid var(--line);
+    }
+    .spellTop h4{margin:0; font-size:13px}
+    .spellTop small{color:var(--muted)}
+    .spellBody{padding:12px; display:none;}
+    .spellBody p{margin:0; color:#222; font-size:12.5px; line-height:1.45}
+    .spellBody ul{margin:10px 0 0; padding-left:18px; font-size:12.5px; line-height:1.45}
+    .spellBody li{margin:4px 0}
+    .spellActions{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;}
+    .miniBtn{
+      padding:8px 10px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,var(--soft));
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+    }
+    .miniBtn:hover{border-color:rgba(241,184,45,.55)}
+    .miniBtnGold{
+      border-color:rgba(241,184,45,.55);
+      background:linear-gradient(180deg, rgba(241,184,45,.35), rgba(241,184,45,.18));
+    }
+
+    .log{
+      border-top:1px solid var(--line);
+      padding:12px 16px 16px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+    }
+    .log pre{
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:12px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      line-height:1.45;
+    }
+    .toast{
+      position:fixed;
+      bottom:18px;
+      left:50%;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,.88);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(241,184,45,.35);
+      box-shadow:var(--shadow);
+      display:none;
+      z-index:99;
+      font-size:13px;
+    }
+
+    .hidden{display:none!important}
+    .divider{height:1px; background:var(--line); margin:12px 0}
+
+    .footerNote{
+      margin-top:16px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <h1>
+          <span class="badgeLogo">M</span>
+          Biliteracy Quest: The Pedagogy Dungeon
+        </h1>
+        <p>
+          Make instructional decisions, earn insight, and build a plan you can submit in Canvas.
+          No login, no saved data, and no real student information.
+        </p>
+        <div class="chip" aria-label="FERPA safe reminder">
+          <span class="dot"></span>
+          FERPA safe design, no names, no storage
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btnGold" id="btnStart">Start Quest</button>
+        <button class="btn" id="btnSpellbook">Theory Spellbook</button>
+        <button class="btn btnGhost" id="btnReset">Reset</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="cardMain">
+        <div class="questMap" id="questMap" aria-label="Quest map navigation">
+          <div class="checkpoint active" data-step="0">
+            <div class="left">
+              <div class="bubble">1</div>
+              <div>
+                <div><b>Choose Mission</b></div>
+                <small>Pick your challenge</small>
+              </div>
+            </div>
+            <div class="checkMark">✓</div>
+          </div>
+
+          <div class="checkpoint" data-step="1">
+            <div class="left">
+              <div class="bubble">2</div>
+              <div>
+                <div><b>Face Scenario</b></div>
+                <small>Decide, then see outcomes</small>
+              </div>
+            </div>
+            <div class="checkMark">✓</div>
+          </div>
+
+          <div class="checkpoint" data-step="2">
+            <div class="left">
+              <div class="bubble">3</div>
+              <div>
+                <div><b>Consult Theory</b></div>
+                <small>Apply a lens</small>
+              </div>
+            </div>
+            <div class="checkMark">✓</div>
+          </div>
+
+          <div class="checkpoint" data-step="3">
+            <div class="left">
+              <div class="bubble">4</div>
+              <div>
+                <div><b>Build Output</b></div>
+                <small>Decision scroll</small>
+              </div>
+            </div>
+            <div class="checkMark">✓</div>
+          </div>
+
+          <div class="checkpoint" data-step="4">
+            <div class="left">
+              <div class="bubble">5</div>
+              <div>
+                <div><b>Submit</b></div>
+                <small>Copy into Canvas</small>
+              </div>
+            </div>
+            <div class="checkMark">✓</div>
+          </div>
+        </div>
+
+        <div class="cardBody" id="mainBody">
+          <div id="screenMissions">
+            <h2 style="margin:0 0 10px;">Mission Hub</h2>
+            <p class="tiny" style="margin:0 0 14px;">
+              Choose one mission. Make three decisions. Justify at least one choice using theory.
+              Earn XP for thoughtful reasoning.
+            </p>
+
+            <div class="missions" id="missions"></div>
+
+            <div class="footerNote">
+              Tip: Your best score comes from explaining tradeoffs, not from picking a single perfect answer.
+              You can use the Theory Spellbook any time.
+            </div>
+          </div>
+
+          <div id="screenScenario" class="hidden">
+            <div class="panel">
+              <div class="panelHeader">
+                <h3 id="scenarioTitle">Scenario</h3>
+                <div class="pill" id="roundPill">Round 1 of 3</div>
+              </div>
+
+              <div class="panelBody">
+                <div class="scene">
+                  <div class="sceneBox">
+                    <h4>Story Scene</h4>
+                    <p id="scenarioScene"></p>
+                  </div>
+                  <div class="artifact" aria-label="Fictional student artifact">
+                    <div class="label">Fictional classroom artifact</div>
+                    <div class="paper" id="scenarioArtifact"></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <div>
+                      <b id="decisionPrompt">Decision Point</b>
+                      <div class="tiny" id="decisionHint">Choose one action</div>
+                    </div>
+                    <div class="pill" id="xpHint">Earn XP by justifying your choice</div>
+                  </div>
+
+                  <div class="choices" id="choices"></div>
+
+                  <div id="resultArea" class="hidden">
+                    <div class="resultGrid">
+                      <div class="result">
+                        <h4>Outcome</h4>
+                        <p id="outcomeText"></p>
+                        <div class="hint" id="tradeoffText"></div>
+                      </div>
+                      <div class="result">
+                        <h4>Theory Lens Prompt</h4>
+                        <p id="lensPrompt"></p>
+                        <div class="lensRow">
+                          <button class="lensBtn" id="btnShowLens">Open Lens Hints</button>
+                          <button class="lensBtn" id="btnNext">Next Round</button>
+                        </div>
+                        <div class="lensPop" id="lensPop"></div>
+                      </div>
+                    </div>
+
+                    <div class="inputBox">
+                      <b>Justify your choice</b>
+                      <p class="note">Write 3 to 6 sentences. Mention at least one author or course idea. No names, no student identifiers.</p>
+                      <textarea id="justification" placeholder="Example: I chose option B because it supports oral rehearsal before writing, which aligns with Gibbons’ oral to written progression. It also increases access by allowing participation through talk and structured supports, which connects to Hornberger. A risk is time, so I would keep the oral step brief and use a visual organizer to bridge into writing."></textarea>
+                      <div class="row">
+                        <button class="btn btnGold" id="btnSaveJustification">Save justification and earn XP</button>
+                        <span class="note" id="justificationStatus">Not saved yet</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="log">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                  <b>Decision Path Scroll</b>
+                  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="miniBtn" id="btnCopyLog">Copy scroll</button>
+                    <button class="miniBtn miniBtnGold" id="btnFinish">Finish mission</button>
+                  </div>
+                </div>
+                <div class="divider"></div>
+                <pre id="logText">Pick a mission to begin.</pre>
+              </div>
+            </div>
+          </div>
+
+          <div id="screenSubmit" class="hidden">
+            <div class="panel">
+              <div class="panelHeader">
+                <h3>Quest Complete</h3>
+                <div class="pill" id="badgeSummary">Badges 0</div>
+              </div>
+              <div class="panelBody">
+                <div class="sceneBox">
+                  <h4>What to submit in Canvas</h4>
+                  <ul style="margin:0; padding-left:18px; line-height:1.55; font-size:13px;">
+                    <li>Paste your Decision Path Scroll</li>
+                    <li>Paste one justification paragraph you wrote</li>
+                    <li>Add 2 course citations or references to authors you used</li>
+                    <li>Brief reflection: what you would do differently next time, and why</li>
+                  </ul>
+                </div>
+
+                <div style="margin-top:12px;" class="sceneBox">
+                  <h4>Copy everything</h4>
+                  <p class="tiny" style="margin:0 0 10px;">This copy includes your scroll and any saved justification text.</p>
+                  <button class="btn btnGold" id="btnCopyAll">Copy for Canvas</button>
+                </div>
+
+                <div class="footerNote">
+                  Reminder: This webpage stores nothing. When you refresh, your work disappears unless you copied it.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="screenSpellbook" class="hidden">
+            <div class="panel">
+              <div class="panelHeader">
+                <h3>Theory Spellbook</h3>
+                <div class="pill">Click a card to open</div>
+              </div>
+              <div class="panelBody">
+                <div class="spellbook" id="spellbook"></div>
+
+                <div class="footerNote">
+                  Use these prompts to strengthen your justification. The goal is not to name drop.
+                  The goal is to explain why a move supports language development, access, participation, and learning.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHeader">
+          <h2>Player Panel</h2>
+          <span class="pill" id="levelPill">Level 1</span>
+        </div>
+        <div class="cardBody">
+          <div class="playerPanel">
+            <div class="statRow">
+              <div class="stat">
+                <div class="k">XP</div>
+                <div class="v" id="xpVal">0</div>
+              </div>
+              <div class="stat">
+                <div class="k">Badges</div>
+                <div class="v" id="badgeVal">0</div>
+              </div>
+            </div>
+
+            <div class="stat">
+              <div class="k">Quest progress</div>
+              <div class="progressWrap"><div class="progressBar" id="progressBar"></div></div>
+              <p class="tiny" id="progressText" style="margin-top:8px;">Choose a mission to begin.</p>
+            </div>
+
+            <div class="stat">
+              <div class="k">Unlocked badges</div>
+              <div id="badgesList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+              <p class="tiny" style="margin-top:8px;">Badges unlock when you finish a mission and apply theory.</p>
+            </div>
+
+            <div class="footerNote">
+              Mizzou theme: black and gold. Built for easy embedding in Canvas or hosting on GitHub Pages.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+    const STATE = {
+      step: 0,
+      xp: 0,
+      badges: [],
+      missionId: null,
+      round: 0,
+      decisionLog: [],
+      savedJustifications: [],
+      appliedSpells: []
+    };
+
+    const MISSIONS = [
+      {
+        id: "bridge",
+        title: "The Oral to Writing Bridge",
+        emoji: "🌉",
+        sigil: "OW",
+        difficulty: 2,
+        tags: ["Gibbons", "Academic Language", "Scaffolding"],
+        blurb: "Students speak well but struggle to write. Build a bridge from talk to text.",
+        scenario: {
+          title: "Mission 1: The Oral to Writing Bridge",
+          rounds: [
+            {
+              scene: "You enter Room 1. A glowing sign reads: Academic Paragraph Due. Your multilingual class has strong ideas in discussion, but their writing is short, repetitive, or vague. You have 45 minutes to guide students from meaning to academic language.",
+              artifact: "Fictional student note: “I like Mizzou because is big. The class is good. I learn.”\nTeacher observation: Students can explain more when they talk, but they do not know how to expand ideas in writing.",
+              prompt: "How do you start this lesson today?",
+              hint: "Pick a first move that builds meaning before drafting",
+              choices: [
+                {
+                  label: "A",
+                  title: "Start writing immediately",
+                  text: "Students begin drafting right away with minimal scaffolding.",
+                  outcome: "Some students start quickly, but many freeze or produce shallow sentences. Writing becomes compliance rather than meaning making.",
+                  tradeoff: "Benefit: Saves time. Risk: Low access for students who need oral rehearsal or visual support.",
+                  lensPrompt: "Which choice best supports a gradual move from spoken meaning to written form? How does this affect participation?"
+                },
+                {
+                  label: "B",
+                  title: "Structured oral rehearsal",
+                  text: "Use a brief talk protocol and sentence starters so students rehearse ideas aloud.",
+                  outcome: "More students participate and clarify ideas. Vocabulary and reasoning emerge before writing begins.",
+                  tradeoff: "Benefit: Stronger ideas. Risk: Time pressure later unless the talk step is tightly structured.",
+                  lensPrompt: "How does oral rehearsal support an oral to written progression? Where do you see access and identity support?"
+                },
+                {
+                  label: "C",
+                  title: "Model paragraph spotlight",
+                  text: "Analyze an annotated model paragraph first to clarify expectations.",
+                  outcome: "Students see academic features and structure. Some may imitate without fully understanding meaning.",
+                  tradeoff: "Benefit: Clear target. Risk: Students may copy form without building their own ideas.",
+                  lensPrompt: "How can a model support academic language without replacing student voice? What supports prevent formula only writing?"
+                }
+              ],
+              lensHints: {
+                title: "Lens Hints",
+                items: [
+                  "Gibbons focus: build meaning through talk, then guide students into more structured language.",
+                  "Hornberger focus: multiple entry points, participation pathways, and valuing linguistic resources.",
+                  "Ask: Who benefits from this move? Who might be excluded without additional supports?"
+                ]
+              }
+            },
+            {
+              scene: "Students now have ideas from discussion, but their drafts are still short and informal. Some students repeat the same simple sentence pattern. You want academic language without shutting down participation.",
+              artifact: "Fictional draft line: “I like the university because it is good and big.”\nPeer comment: “I do not know more words.”",
+              prompt: "What do you add before the next draft attempt?",
+              hint: "Pick a scaffold that supports academic language and keeps student meaning central",
+              choices: [
+                {
+                  label: "A",
+                  title: "Sentence frames and word bank",
+                  text: "Provide a targeted word bank plus flexible sentence frames for expansion.",
+                  outcome: "Students write longer and clearer sentences and begin using academic structures.",
+                  tradeoff: "Benefit: Language support. Risk: Can become formulaic unless students personalize ideas.",
+                  lensPrompt: "How do you keep frames supportive rather than restrictive? Which author helps you justify this scaffold?"
+                },
+                {
+                  label: "B",
+                  title: "Collaborative group drafting",
+                  text: "Assign roles and draft in groups to support idea development through talk.",
+                  outcome: "Ideas deepen and students learn from peers. Participation can be uneven without clear roles and accountability.",
+                  tradeoff: "Benefit: Peer language. Risk: Some voices disappear unless the structure protects participation.",
+                  lensPrompt: "How does group talk support learning through language? What participation supports align with Hornberger?"
+                },
+                {
+                  label: "C",
+                  title: "Mini lesson on academic features",
+                  text: "Teach one feature, like adding reasons and evidence, then return to writing.",
+                  outcome: "Writing gains focus and becomes more academic. Some students need examples and practice before applying.",
+                  tradeoff: "Benefit: Precision. Risk: Cognitive overload if the feature is taught without a visual support.",
+                  lensPrompt: "What visual element could reduce cognitive load? How does this connect to multimodality?"
+                }
+              ],
+              lensHints: {
+                title: "Lens Hints",
+                items: [
+                  "Use visuals: organizers, color coding, and examples can reduce cognitive load.",
+                  "Consider identity: let students bring culturally relevant examples to keep voice and meaning.",
+                  "Consider access: sentence frames can be differentiated rather than one size fits all."
+                ]
+              }
+            },
+            {
+              scene: "Students have a draft. Now you want critical thinking: revision and evaluation, not just editing. Some students think revision means fixing spelling only.",
+              artifact: "Fictional peer feedback: “Good.”\nStudent question: “Do I just correct spelling?”",
+              prompt: "How do you structure revision to increase critical thinking?",
+              hint: "Pick a move that makes revision about meaning, evidence, and clarity",
+              choices: [
+                {
+                  label: "A",
+                  title: "Revision checklist with categories",
+                  text: "Use a checklist for meaning, evidence, organization, and language, with examples.",
+                  outcome: "Students revise for ideas and structure, not only mechanics. They learn what counts as strong academic writing.",
+                  tradeoff: "Benefit: Clarity. Risk: Needs modeling so the checklist is used well.",
+                  lensPrompt: "How does explicit criteria support academic language development? How do you keep it accessible?"
+                },
+                {
+                  label: "B",
+                  title: "Peer review with structured prompts",
+                  text: "Students give feedback using sentence starters and targeted questions.",
+                  outcome: "Peer talk becomes substantive. Students practice academic discourse and critique respectfully.",
+                  tradeoff: "Benefit: Dialogic learning. Risk: Without guidance, feedback stays shallow.",
+                  lensPrompt: "How does structured talk support learning through language? What makes it equitable?"
+                },
+                {
+                  label: "C",
+                  title: "One on one conferences",
+                  text: "Brief teacher conferences focusing on one high impact revision goal.",
+                  outcome: "High quality feedback and personalized support. Time limits reduce how many students you can reach.",
+                  tradeoff: "Benefit: Precision support. Risk: Scalability and unequal access if time runs out.",
+                  lensPrompt: "How do you balance depth and access? What system could broaden participation?"
+                }
+              ],
+              lensHints: {
+                title: "Lens Hints",
+                items: [
+                  "Critical thinking grows when students evaluate and justify changes, not just correct errors.",
+                  "Use multimodality: annotate a draft with color coding, symbols, or a quick oral rehearsal before rewriting.",
+                  "Ask students to explain why they revised a sentence, using course concepts."
+                ]
+              }
+            }
+          ]
+        },
+        badges: ["Scaffold Architect", "Access Advocate"]
+      },
+      {
+        id: "maze",
+        title: "The Reading Barrier Maze",
+        emoji: "🧩",
+        sigil: "RB",
+        difficulty: 3,
+        tags: ["Reading", "Barriers and Bridges", "Transfer"],
+        blurb: "A text is blocking comprehension. Find bridges that support meaning and biliteracy.",
+        comingSoon: true
+      },
+      {
+        id: "puzzle",
+        title: "The Participation Puzzle",
+        emoji: "🗣️",
+        sigil: "PP",
+        difficulty: 2,
+        tags: ["Identity", "Access", "Group Work"],
+        blurb: "Some voices dominate. Some disappear. Design participation that is equitable.",
+        comingSoon: true
+      },
+      {
+        id: "remix",
+        title: "The Multimodal Remix Room",
+        emoji: "🎛️",
+        sigil: "MM",
+        difficulty: 1,
+        tags: ["Multimodality", "Meaning Making", "Design"],
+        blurb: "Turn a concept into a multimodal learning sequence without cognitive overload.",
+        comingSoon: true
+      }
+    ];
+
+    const SPELLS = [
+      {
+        id:"gibbons",
+        title:"Gibbons: Scaffold Spell",
+        subtitle:"Oral to written progression",
+        body:[
+          "Use talk to build meaning before expecting academic writing.",
+          "Sequence supports: oral rehearsal, visual organization, then structured writing.",
+          "Model, jointly construct, then release responsibility."
+        ],
+        prompts:[
+          "How does your move build meaning before form?",
+          "What scaffold makes academic language visible and doable?",
+          "How will you fade the scaffold over time?"
+        ]
+      },
+      {
+        id:"hornberger",
+        title:"Hornberger: Access Charm",
+        subtitle:"Identity, access, participation",
+        body:[
+          "Design for multiple entry points, not one pathway.",
+          "Value students’ linguistic resources as assets.",
+          "Participation structures are part of equity."
+        ],
+        prompts:[
+          "Who gains access with this choice? Who might still be excluded?",
+          "How does the choice affirm multilingual identity and voice?",
+          "What participation structure keeps the conversation equitable?"
+        ]
+      },
+      {
+        id:"multimodal",
+        title:"Multimodality Mixer",
+        subtitle:"Modes reinforce meaning",
+        body:[
+          "Pair oral, visual, and written modes to reduce cognitive load.",
+          "Use visuals to externalize thinking: diagrams, organizers, annotation.",
+          "Make transitions between modes explicit."
+        ],
+        prompts:[
+          "What visual element makes the next step clearer?",
+          "How do modes connect rather than compete?",
+          "What is the simplest multimodal combo that improves understanding?"
+        ]
+      },
+      {
+        id:"academic",
+        title:"Academic Language Lens",
+        subtitle:"From everyday to disciplinary",
+        body:[
+          "Teach language features as resources for meaning, not as rules only.",
+          "Connect vocabulary to function: explain, argue, compare, justify.",
+          "Use examples and sentence frames strategically."
+        ],
+        prompts:[
+          "Which feature supports clarity and evidence here?",
+          "How will you keep student voice while increasing formality?",
+          "What scaffold supports transfer to new tasks?"
+        ]
+      }
+    ];
+
+    const el = (id) => document.getElementById(id);
+
+    const missionsEl = el("missions");
+    const screenMissions = el("screenMissions");
+    const screenScenario = el("screenScenario");
+    const screenSubmit = el("screenSubmit");
+    const screenSpellbook = el("screenSpellbook");
+
+    const questMap = el("questMap");
+    const progressBar = el("progressBar");
+    const progressText = el("progressText");
+    const xpVal = el("xpVal");
+    const badgeVal = el("badgeVal");
+    const levelPill = el("levelPill");
+    const badgesList = el("badgesList");
+
+    const scenarioTitle = el("scenarioTitle");
+    const roundPill = el("roundPill");
+    const scenarioScene = el("scenarioScene");
+    const scenarioArtifact = el("scenarioArtifact");
+    const decisionPrompt = el("decisionPrompt");
+    const decisionHint = el("decisionHint");
+    const choicesEl = el("choices");
+
+    const resultArea = el("resultArea");
+    const outcomeText = el("outcomeText");
+    const tradeoffText = el("tradeoffText");
+    const lensPrompt = el("lensPrompt");
+    const lensPop = el("lensPop");
+    const btnShowLens = el("btnShowLens");
+    const btnNext = el("btnNext");
+
+    const justification = el("justification");
+    const btnSaveJustification = el("btnSaveJustification");
+    const justificationStatus = el("justificationStatus");
+
+    const logText = el("logText");
+    const btnCopyLog = el("btnCopyLog");
+    const btnFinish = el("btnFinish");
+
+    const btnStart = el("btnStart");
+    const btnSpellbook = el("btnSpellbook");
+    const btnReset = el("btnReset");
+
+    const spellbookEl = el("spellbook");
+
+    const badgeSummary = el("badgeSummary");
+    const btnCopyAll = el("btnCopyAll");
+
+    const toast = el("toast");
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(()=> toast.style.display="none", 1200);
+    }
+
+    function setStep(step){
+      STATE.step = step;
+      [...questMap.querySelectorAll(".checkpoint")].forEach(cp=>{
+        const s = Number(cp.dataset.step);
+        cp.classList.toggle("active", s === step);
+        cp.classList.toggle("done", s < step);
+      });
+
+      const pct = (step / 4) * 100;
+      progressBar.style.width = pct + "%";
+      const labels = [
+        "Choose a mission to begin.",
+        "Make a decision and review outcomes.",
+        "Consult theory to strengthen your justification.",
+        "Build your decision path scroll.",
+        "Copy and submit in Canvas."
+      ];
+      progressText.textContent = labels[step] || labels[0];
+    }
+
+    function updatePlayerPanel(){
+      xpVal.textContent = STATE.xp;
+      badgeVal.textContent = STATE.badges.length;
+      const level = 1 + Math.floor(STATE.xp / 60);
+      levelPill.textContent = "Level " + level;
+
+      badgesList.innerHTML = "";
+      if(STATE.badges.length === 0){
+        const span = document.createElement("span");
+        span.className = "tag tagDark";
+        span.textContent = "None yet";
+        badgesList.appendChild(span);
+      } else {
+        STATE.badges.forEach(b=>{
+          const span = document.createElement("span");
+          span.className = "tag tagGold";
+          span.textContent = b;
+          badgesList.appendChild(span);
+        });
+      }
+    }
+
+    function renderMissions(){
+      missionsEl.innerHTML = "";
+      MISSIONS.forEach(m=>{
+        const div = document.createElement("div");
+        div.className = "mission";
+        const stars = "★".repeat(m.difficulty) + "☆".repeat(Math.max(0,3-m.difficulty));
+        const coming = m.comingSoon;
+
+        div.innerHTML = `
+          <div class="missionTop">
+            <div>
+              <div class="missionTitle">${m.title}</div>
+              <div class="tagRow">
+                ${(m.tags||[]).slice(0,3).map(t=> `<span class="tag ${t==="Gibbons"||t==="Multimodality" ? "tagGold" : "tagDark"}">${t}</span>`).join("")}
+                ${coming ? `<span class="tag tagGreen">Coming soon</span>` : ``}
+              </div>
+            </div>
+            <div class="difficulty">
+              <span class="stars">${stars}</span>
+            </div>
+          </div>
+
+          <div class="missionArt">
+            <div class="sigil">${m.sigil || "Q"}</div>
+            <div class="emoji">${m.emoji || "🗝️"}</div>
+            <div class="caption">${m.blurb || ""}</div>
+          </div>
+
+          <div class="missionBottom">
+            <div class="difficulty"><span>Difficulty</span><span class="stars">${stars}</span></div>
+            <button class="btn ${coming ? "" : "btnGold"}" ${coming ? "disabled style='opacity:.55; cursor:not-allowed'" : ""} data-mission="${m.id}">
+              ${coming ? "Locked" : "Play Mission"}
+            </button>
+          </div>
+        `;
+        missionsEl.appendChild(div);
+      });
+
+      missionsEl.querySelectorAll("button[data-mission]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const id = btn.getAttribute("data-mission");
+          startMission(id);
+        });
+      });
+    }
+
+    function currentMission(){
+      return MISSIONS.find(m=> m.id === STATE.missionId);
+    }
+
+    function roundData(){
+      const m = currentMission();
+      if(!m || !m.scenario) return null;
+      return m.scenario.rounds[STATE.round];
+    }
+
+    function startMission(missionId){
+      STATE.missionId = missionId;
+      STATE.round = 0;
+      STATE.decisionLog = [];
+      STATE.savedJustifications = [];
+      STATE.appliedSpells = [];
+
+      setStep(1);
+      screenMissions.classList.add("hidden");
+      screenScenario.classList.remove("hidden");
+      screenSubmit.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+
+      renderRound();
+      updateLog();
+      updatePlayerPanel();
+    }
+
+    function renderRound(){
+      const m = currentMission();
+      const r = roundData();
+      if(!m || !r) return;
+
+      scenarioTitle.textContent = m.scenario.title;
+      roundPill.textContent = "Round " + (STATE.round + 1) + " of " + m.scenario.rounds.length;
+
+      scenarioScene.textContent = r.scene;
+      scenarioArtifact.textContent = r.artifact;
+
+      decisionPrompt.textContent = r.prompt;
+      decisionHint.textContent = r.hint;
+
+      choicesEl.innerHTML = "";
+      resultArea.classList.add("hidden");
+      lensPop.style.display = "none";
+      justification.value = "";
+      justificationStatus.textContent = "Not saved yet";
+
+      r.choices.forEach((c, idx)=>{
+        const div = document.createElement("div");
+        div.className = "choice";
+        div.innerHTML = `
+          <div class="cap">${c.label}. ${c.title} <span>Choose</span></div>
+          <p>${c.text}</p>
+        `;
+        div.addEventListener("click", ()=> selectChoice(idx));
+        choicesEl.appendChild(div);
+      });
+    }
+
+    function selectChoice(idx){
+      const r = roundData();
+      const m = currentMission();
+      if(!r || !m) return;
+
+      const c = r.choices[idx];
+
+      outcomeText.textContent = c.outcome;
+      tradeoffText.textContent = c.tradeoff;
+      lensPrompt.textContent = c.lensPrompt;
+
+      lensPop.innerHTML = `
+        <strong>${r.lensHints.title}</strong>
+        <ul>${r.lensHints.items.map(x=> `<li>${x}</li>`).join("")}</ul>
+      `;
+
+      resultArea.classList.remove("hidden");
+
+      const entry = {
+        round: STATE.round + 1,
+        prompt: r.prompt,
+        choice: `${c.label}. ${c.title}`,
+        outcome: c.outcome,
+        tradeoff: c.tradeoff
+      };
+
+      const existingIndex = STATE.decisionLog.findIndex(e=> e.round === entry.round);
+      if(existingIndex >= 0) STATE.decisionLog[existingIndex] = entry;
+      else STATE.decisionLog.push(entry);
+
+      updateLog();
+
+      btnShowLens.onclick = ()=>{
+        lensPop.style.display = lensPop.style.display === "block" ? "none" : "block";
+      };
+
+      btnNext.onclick = ()=>{
+        goNextRound();
+      };
+
+      btnSaveJustification.onclick = ()=>{
+        saveJustification(entry);
+      };
+    }
+
+    function saveJustification(entry){
+      const text = justification.value.trim();
+      if(text.length < 40){
+        showToast("Add a bit more detail first");
+        return;
+      }
+
+      const saved = {
+        round: entry.round,
+        text
+      };
+
+      const i = STATE.savedJustifications.findIndex(x=> x.round === saved.round);
+      if(i >= 0) STATE.savedJustifications[i] = saved;
+      else STATE.savedJustifications.push(saved);
+
+      const base = 20;
+      const bonus = containsTheory(text) ? 15 : 0;
+      addXP(base + bonus);
+
+      justificationStatus.textContent = "Saved and XP earned";
+      showToast("Saved");
+      updateLog();
+      setStep(Math.max(STATE.step, 2));
+    }
+
+    function containsTheory(text){
+      const t = text.toLowerCase();
+      return t.includes("gibbons") || t.includes("hornberger") || t.includes("multimodal") || t.includes("academic") || t.includes("scaffold");
+    }
+
+    function addXP(amount){
+      STATE.xp += amount;
+      updatePlayerPanel();
+    }
+
+    function goNextRound(){
+      const m = currentMission();
+      if(!m) return;
+
+      if(STATE.round < m.scenario.rounds.length - 1){
+        STATE.round += 1;
+        renderRound();
+        updateLog();
+        setStep(Math.max(STATE.step, 1));
+      } else {
+        finishMission();
+      }
+    }
+
+    function finishMission(){
+      const m = currentMission();
+      if(!m) return;
+
+      const usedTheory = STATE.savedJustifications.some(j => containsTheory(j.text));
+      const badgePicks = [];
+
+      if(m.badges && m.badges.length){
+        badgePicks.push(m.badges[0]);
+        if(usedTheory) badgePicks.push(m.badges[1] || "Theory Tactician");
+      } else {
+        badgePicks.push("Quest Finisher");
+        if(usedTheory) badgePicks.push("Theory Tactician");
+      }
+
+      badgePicks.forEach(b=>{
+        if(!STATE.badges.includes(b)) STATE.badges.push(b);
+      });
+
+      addXP(30);
+      updatePlayerPanel();
+
+      setStep(4);
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.remove("hidden");
+      screenMissions.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+
+      badgeSummary.textContent = "Badges " + STATE.badges.length;
+
+      showToast("Quest complete");
+    }
+
+    function updateLog(){
+      const m = currentMission();
+      const title = m ? m.title : "No mission selected";
+      const lines = [];
+
+      lines.push("BILITERACY QUEST DECISION PATH SCROLL");
+      lines.push("Mission: " + title);
+      lines.push("");
+
+      if(STATE.decisionLog.length === 0){
+        lines.push("Pick a mission and make a choice to generate your scroll.");
+      } else {
+        STATE.decisionLog
+          .sort((a,b)=> a.round - b.round)
+          .forEach(e=>{
+            lines.push("Round " + e.round);
+            lines.push("Prompt: " + e.prompt);
+            lines.push("Choice: " + e.choice);
+            lines.push("Outcome: " + e.outcome);
+            lines.push("Tradeoff: " + e.tradeoff);
+            lines.push("");
+          });
+      }
+
+      if(STATE.savedJustifications.length){
+        lines.push("SAVED JUSTIFICATION");
+        STATE.savedJustifications
+          .sort((a,b)=> a.round - b.round)
+          .forEach(j=>{
+            lines.push("Round " + j.round + " justification:");
+            lines.push(j.text);
+            lines.push("");
+          });
+      }
+
+      if(STATE.appliedSpells.length){
+        lines.push("APPLIED THEORY SPELLS");
+        lines.push(STATE.appliedSpells.map(s=> "• " + s).join("\n"));
+        lines.push("");
+      }
+
+      lines.push("XP: " + STATE.xp);
+      lines.push("Badges: " + (STATE.badges.length ? STATE.badges.join(", ") : "None"));
+
+      logText.textContent = lines.join("\n");
+    }
+
+    function copyText(text){
+      navigator.clipboard.writeText(text).then(()=> showToast("Copied"));
+    }
+
+    btnCopyLog.addEventListener("click", ()=> copyText(logText.textContent));
+    btnFinish.addEventListener("click", ()=> finishMission());
+
+    btnCopyAll.addEventListener("click", ()=> copyText(logText.textContent));
+
+    btnStart.addEventListener("click", ()=>{
+      setStep(0);
+      screenMissions.classList.remove("hidden");
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    btnSpellbook.addEventListener("click", ()=>{
+      screenSpellbook.classList.toggle("hidden");
+      screenMissions.classList.add("hidden");
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.add("hidden");
+      renderSpellbook();
+      setStep(Math.max(STATE.step, 2));
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    btnReset.addEventListener("click", resetAll);
+
+    function resetAll(){
+      STATE.step = 0;
+      STATE.xp = 0;
+      STATE.badges = [];
+      STATE.missionId = null;
+      STATE.round = 0;
+      STATE.decisionLog = [];
+      STATE.savedJustifications = [];
+      STATE.appliedSpells = [];
+      setStep(0);
+      updatePlayerPanel();
+      renderMissions();
+      updateLog();
+      screenMissions.classList.remove("hidden");
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+      showToast("Reset");
+    }
+
+    function renderSpellbook(){
+      spellbookEl.innerHTML = "";
+      SPELLS.forEach(sp=>{
+        const wrap = document.createElement("div");
+        wrap.className = "spell";
+        wrap.innerHTML = `
+          <div class="spellTop">
+            <div>
+              <h4>${sp.title}</h4>
+              <small>${sp.subtitle}</small>
+            </div>
+            <button class="miniBtn" data-open="${sp.id}">Open</button>
+          </div>
+          <div class="spellBody" id="body_${sp.id}">
+            <p>${sp.body.join(" ")}</p>
+            <ul>${sp.prompts.map(p=> `<li>${p}</li>`).join("")}</ul>
+            <div class="spellActions">
+              <button class="miniBtn miniBtnGold" data-apply="${sp.id}">Apply Spell</button>
+              <button class="miniBtn" data-close="${sp.id}">Close</button>
+            </div>
+          </div>
+        `;
+        spellbookEl.appendChild(wrap);
+      });
+
+      spellbookEl.querySelectorAll("button[data-open]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const id = b.getAttribute("data-open");
+          el("body_" + id).style.display = "block";
+        });
+      });
+      spellbookEl.querySelectorAll("button[data-close]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const id = b.getAttribute("data-close");
+          el("body_" + id).style.display = "none";
+        });
+      });
+      spellbookEl.querySelectorAll("button[data-apply]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const id = b.getAttribute("data-apply");
+          const sp = SPELLS.find(s=> s.id === id);
+          if(!sp) return;
+          if(!STATE.appliedSpells.includes(sp.title)){
+            STATE.appliedSpells.push(sp.title);
+            addXP(20);
+            showToast("Spell applied");
+            updateLog();
+          } else {
+            showToast("Already applied");
+          }
+        });
+      });
+    }
+
+    // Allow clicking checkpoints to jump to screens
+    questMap.querySelectorAll(".checkpoint").forEach(cp=>{
+      cp.addEventListener("click", ()=>{
+        const s = Number(cp.dataset.step);
+        if(s === 0){
+          screenMissions.classList.remove("hidden");
+          screenScenario.classList.add("hidden");
+          screenSubmit.classList.add("hidden");
+          screenSpellbook.classList.add("hidden");
+          setStep(0);
+        }
+        if(s === 2){
+          screenSpellbook.classList.remove("hidden");
+          screenMissions.classList.add("hidden");
+          screenScenario.classList.add("hidden");
+          screenSubmit.classList.add("hidden");
+          renderSpellbook();
+          setStep(2);
+        }
+        if(s === 4){
+          if(STATE.missionId){
+            screenSubmit.classList.remove("hidden");
+            screenMissions.classList.add("hidden");
+            screenScenario.classList.add("hidden");
+            screenSpellbook.classList.add("hidden");
+            setStep(4);
+          } else {
+            showToast("Finish a mission first");
+          }
+        }
+      });
+    });
+
+    // Init
+    renderMissions();
+    setStep(0);
+    updatePlayerPanel();
+    updateLog();
+  </script>
+</body>
+</html>
