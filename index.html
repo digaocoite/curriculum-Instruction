@@ -502,6 +502,50 @@
       padding:4px 8px;
       color:#111;
     }
+
+    /* Game feel */
+    .choice{
+      transform:translateY(0);
+    }
+    .choice.selected{
+      border-color:rgba(241,184,45,.75);
+      box-shadow:0 18px 28px rgba(0,0,0,.10);
+      background:linear-gradient(180deg,#fff,rgba(241,184,45,.10));
+    }
+    .choice.selected .cap span{color:#111}
+    @keyframes pop {
+      0%{transform:scale(.98)}
+      55%{transform:scale(1.02)}
+      100%{transform:scale(1)}
+    }
+    .pop{animation:pop .22s ease-out}
+
+    #confetti{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:120;
+      overflow:hidden;
+    }
+    .confettiBit{
+      position:absolute;
+      width:10px; height:14px;
+      border-radius:4px;
+      opacity:.95;
+      transform:translateY(-20px) rotate(0deg);
+      animation: confettiFall 900ms ease-in forwards;
+      box-shadow:0 8px 16px rgba(0,0,0,.18);
+    }
+    @keyframes confettiFall{
+      to{ transform:translateY(110vh) rotate(480deg); opacity:0.9; }
+    }
+
+    /* Reduced motion toggle */
+    body.reducedMotion *{
+      animation:none !important;
+      transition:none !important;
+      scroll-behavior:auto !important;
+    }
     .hidden{display:none!important}
     .divider{height:1px; background:var(--line); margin:12px 0}
     .footerNote{
@@ -533,9 +577,14 @@
       <div class="actions">
         <button type="button" class="btn btnGold" id="btnStart">Mission Hub</button>
         <button type="button" class="btn" id="btnSpellbook">Theory Spellbook</button>
+        <button type="button" class="btn" id="btnDaily">Daily Challenge</button>
+        <button type="button" class="btn" id="btnSound">Sound: Off</button>
+        <button type="button" class="btn" id="btnMotion">Motion: On</button>
         <button type="button" class="btn btnGhost" id="btnReset">Reset</button>
       </div>
     </div>
+
+    <div id="confetti" aria-hidden="true"></div>
 
     <div class="grid">
       <div class="card" id="cardMain">
@@ -612,6 +661,7 @@
                   <div class="pill" id="roundPill">Round 1 of 3</div>
                   <div class="pill" id="runTimerPill">⏱ 00:00</div>
                   <div class="pill" id="streakPill">Streak 0</div>
+                  <div class="pill" id="roundMapPill">◉ ○ ○</div>
                 </div>
               </div>
 
@@ -707,6 +757,26 @@
                   <button type="button" class="btn btnGold" id="btnCopyAll">Copy for Canvas</button>
                 </div>
 
+                <div style="margin-top:12px;" class="sceneBox">
+                  <h4>Scoreboard</h4>
+                  <div id="scoreboard" class="tiny" style="line-height:1.55;"></div>
+                  <div class="row">
+                    <button type="button" class="miniBtn miniBtnGold" id="btnReplayMission">Replay this mission</button>
+                    <span class="note" id="rankNote">—</span>
+                  </div>
+                </div>
+
+                <div style="margin-top:12px;" class="sceneBox">
+                  <h4>Replay code (share / load exact path)</h4>
+                  <p class="tiny" style="margin:0 0 10px;">Share this code or scan the QR in the image. Loading a replay shows the path without changing your XP.</p>
+                  <textarea id="replayCode" placeholder="Replay code will appear here..." style="min-height:70px;"></textarea>
+                  <div class="row">
+                    <button type="button" class="miniBtn" id="btnCopyReplayCode">Copy code</button>
+                    <button type="button" class="miniBtn" id="btnLoadReplayCode">Load code</button>
+                    <button type="button" class="miniBtn" id="btnClearReplayView">Exit replay view</button>
+                  </div>
+                </div>
+
                 <div class="canvasWrap">
                   <h4 style="margin:0 0 6px;">Canvas Post Image (your exact path)</h4>
                   <p class="tiny" style="margin:0 0 10px;">
@@ -777,6 +847,29 @@
               <div id="badgesList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
               <p class="tiny" style="margin-top:8px;">Badges unlock when you finish missions and connect decisions to theory.</p>
             </div>
+
+            <div class="stat">
+              <div class="k">Run resources & goals</div>
+              <div id="resourcesRow" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+              <p class="tiny" id="goalsText" style="margin-top:8px;">Pick a mission to see its goals.</p>
+            </div>
+
+            <div class="stat">
+              <div class="k">Perks & inventory</div>
+              <div id="perksList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+              <div class="divider"></div>
+              <div id="inventoryList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+              <p class="tiny" style="margin-top:8px;">Perks unlock by leveling up. Artifacts drop on mission completion.</p>
+            </div>
+
+            <div class="stat">
+              <div class="k">Run history</div>
+              <div id="runHistory" style="display:flex; flex-direction:column; gap:8px;"></div>
+              <div class="row">
+                <button type="button" class="miniBtn" id="btnClearHistory">Clear history</button>
+                <span class="tiny">Stored locally in your browser.</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -785,6 +878,7 @@
 
   <div class="toast" id="toast">Copied</div>
 
+  <script src="vendor/qrcode.js"></script>
   <script>
     const STATE = {
       step: 0, xp: 0, badges: [],
@@ -793,7 +887,32 @@
       runStartedAtMs: null,
       runEndedAtMs: null,
       streak: 0,
-      runId: null
+      runId: null,
+      runSeed: null,
+      dailySeed: null,
+      soundOn: false,
+      motionOn: true,
+      dailyMode: false,
+
+      // Meta-game
+      artifacts: [],
+
+      // Run resources (per mission)
+      timeTokens: 0,
+      supportTokens: 0,
+      streakShieldUsed: false,
+      lensUsedRounds: [],
+      runRank: null,
+      runXpStart: 0,
+
+      // Score breakdown (per mission)
+      score: {
+        base: 0,
+        theory: 0,
+        streak: 0,
+        spells: 0,
+        time: 0
+      }
     };
 
     const SPELLS = [
@@ -855,6 +974,33 @@
       }
     ];
 
+    const PERKS = [
+      {
+        id:"streakShield",
+        title:"Streak Shield",
+        minLevel:2,
+        blurb:"Once per mission, advancing without saving won’t break your streak (spends 1 Time Token)."
+      },
+      {
+        id:"scaffoldBoost",
+        title:"Scaffold Boost",
+        minLevel:3,
+        blurb:"+10 XP when your justification includes a theory keyword (Gibbons/Hornberger/etc.)."
+      },
+      {
+        id:"timeBank",
+        title:"Time Banker",
+        minLevel:4,
+        blurb:"Start each mission with +1 Time Token."
+      },
+      {
+        id:"supportSage",
+        title:"Support Sage",
+        minLevel:5,
+        blurb:"Start each mission with +1 Support Token."
+      }
+    ];
+
     // 4 playable missions, each with 3 rounds
     const MISSIONS = [
       {
@@ -864,6 +1010,8 @@
         tags: ["Gibbons","Scaffolding","Writing"],
         blurb: "Students speak well but struggle to write. Build a bridge from talk to text.",
         scenarioTitle: "Mission: The Oral to Writing Bridge",
+        goals: { access: 55, rigor: 45, voice: 40, timeSec: 240 },
+        artifactDrop: "Sentence-Frame Sigil",
         rounds: [
           {
             scene:"A glowing sign reads: Academic Paragraph Due. Students have strong ideas in discussion, but writing is short and vague. You have 45 minutes.",
@@ -951,6 +1099,8 @@
         tags: ["Reading","Comprehension","Bridges"],
         blurb: "A dense text blocks comprehension. Find bridges that support meaning and transfer.",
         scenarioTitle: "Mission: The Reading Barrier Maze",
+        goals: { access: 50, rigor: 55, voice: 35, timeSec: 270 },
+        artifactDrop: "Concept-Map Compass",
         rounds: [
           {
             scene:"Students must read a dense academic text. Many can decode words but struggle to construct meaning and discuss it.",
@@ -1038,6 +1188,8 @@
         tags: ["Identity","Access","Dialogue"],
         blurb: "Some voices dominate and others disappear. Design equitable participation.",
         scenarioTitle: "Mission: The Participation Puzzle",
+        goals: { access: 60, rigor: 40, voice: 55, timeSec: 240 },
+        artifactDrop: "Dialogue Token",
         rounds: [
           {
             scene:"In online discussions, a few students post early and dominate. Others post late or not at all. You want dialogic exchange, not isolated posts.",
@@ -1125,6 +1277,8 @@
         tags: ["Multimodality","Design","Online"],
         blurb: "Design a low-friction multimodal assessment that increases critical thinking.",
         scenarioTitle: "Mission: The Multimodal Remix Room",
+        goals: { access: 45, rigor: 35, voice: 45, timeSec: 210 },
+        artifactDrop: "Alt-Text Amulet",
         rounds: [
           {
             scene:"You need to replace a discussion tool with something simple but more engaging. The goal is dialogic exchange and multimodal meaning-making.",
@@ -1221,11 +1375,18 @@
     const badgeVal = el("badgeVal");
     const levelPill = el("levelPill");
     const badgesList = el("badgesList");
+    const resourcesRow = el("resourcesRow");
+    const goalsText = el("goalsText");
+    const perksList = el("perksList");
+    const inventoryList = el("inventoryList");
+    const runHistory = el("runHistory");
+    const btnClearHistory = el("btnClearHistory");
 
     const scenarioTitle = el("scenarioTitle");
     const roundPill = el("roundPill");
     const runTimerPill = el("runTimerPill");
     const streakPill = el("streakPill");
+    const roundMapPill = el("roundMapPill");
     const scenarioScene = el("scenarioScene");
     const scenarioArtifact = el("scenarioArtifact");
     const decisionPrompt = el("decisionPrompt");
@@ -1251,12 +1412,22 @@
 
     const btnStart = el("btnStart");
     const btnSpellbook = el("btnSpellbook");
+    const btnDaily = el("btnDaily");
+    const btnSound = el("btnSound");
+    const btnMotion = el("btnMotion");
     const btnReset = el("btnReset");
 
     const spellbookEl = el("spellbook");
 
     const badgeSummary = el("badgeSummary");
     const btnCopyAll = el("btnCopyAll");
+    const scoreboard = el("scoreboard");
+    const rankNote = el("rankNote");
+    const btnReplayMission = el("btnReplayMission");
+    const replayCode = el("replayCode");
+    const btnCopyReplayCode = el("btnCopyReplayCode");
+    const btnLoadReplayCode = el("btnLoadReplayCode");
+    const btnClearReplayView = el("btnClearReplayView");
 
     const toast = el("toast");
     const postCanvas = el("postCanvas");
@@ -1264,13 +1435,124 @@
     const btnDownloadPostImage = el("btnDownloadPostImage");
     const btnReRenderPost = el("btnReRenderPost");
     const postStatus = el("postStatus");
+    const confettiEl = el("confetti");
 
     let TIMER_TICK = null;
+    let AUDIO_CTX = null;
+    let AUDIO_UNLOCKED = false;
+    let VIEW_RUN = null; // when viewing history/replay (does not change XP)
 
     function showToast(msg){
       toast.textContent = msg;
       toast.style.display = "block";
       setTimeout(()=> toast.style.display="none", 1200);
+    }
+
+    function loadSettings(){
+      try{
+        const raw = localStorage.getItem("biliteracyQuest_settings_v1");
+        const s = raw ? JSON.parse(raw) : {};
+        const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        STATE.soundOn = Boolean(s.soundOn ?? false);
+        STATE.motionOn = Boolean(s.motionOn ?? !prefersReduced);
+        STATE.dailyMode = Boolean(s.dailyMode ?? false);
+      } catch(_e){
+        // Defaults
+        STATE.soundOn = false;
+        STATE.motionOn = true;
+        STATE.dailyMode = false;
+      }
+      applySettingsToUI();
+    }
+
+    function saveSettings(){
+      try{
+        localStorage.setItem("biliteracyQuest_settings_v1", JSON.stringify({
+          soundOn: STATE.soundOn,
+          motionOn: STATE.motionOn,
+          dailyMode: STATE.dailyMode
+        }));
+      } catch(_e){
+        // ignore
+      }
+    }
+
+    function applySettingsToUI(){
+      if(btnSound) btnSound.textContent = "Sound: " + (STATE.soundOn ? "On" : "Off");
+      if(btnMotion) btnMotion.textContent = "Motion: " + (STATE.motionOn ? "On" : "Off");
+      if(btnDaily) btnDaily.textContent = STATE.dailyMode ? "Daily: On" : "Daily Challenge";
+      document.body.classList.toggle("reducedMotion", !STATE.motionOn);
+    }
+
+    function ensureAudio(){
+      if(AUDIO_CTX) return AUDIO_CTX;
+      try{
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if(!Ctx) return null;
+        AUDIO_CTX = new Ctx();
+        return AUDIO_CTX;
+      } catch(_e){
+        return null;
+      }
+    }
+
+    async function unlockAudio(){
+      if(AUDIO_UNLOCKED) return;
+      const ctx = ensureAudio();
+      if(!ctx) return;
+      try{
+        if(ctx.state === "suspended") await ctx.resume();
+        AUDIO_UNLOCKED = true;
+      } catch(_e){
+        // ignore
+      }
+    }
+
+    function playSfx(kind){
+      if(!STATE.soundOn) return;
+      const ctx = ensureAudio();
+      if(!ctx) return;
+      const now = ctx.currentTime;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "triangle";
+      let f = 440;
+      let dur = 0.08;
+      if(kind === "select"){ f = 520; dur = 0.06; }
+      if(kind === "save"){ f = 680; dur = 0.08; }
+      if(kind === "badge"){ f = 880; dur = 0.12; }
+      if(kind === "fail"){ f = 220; dur = 0.10; o.type = "sawtooth"; }
+      o.frequency.setValueAtTime(f, now);
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.14, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(now);
+      o.stop(now + dur + 0.02);
+    }
+
+    function confettiBurst(){
+      if(!STATE.motionOn) return;
+      if(!confettiEl) return;
+      // create ~30 pieces
+      const colors = ["#F1B82D","#FFD86A","#111111","#0b7a3b","#ffffff"];
+      const count = 34;
+      const w = window.innerWidth || 1200;
+      for(let i=0;i<count;i++){
+        const bit = document.createElement("div");
+        bit.className = "confettiBit";
+        const x = (w * 0.2) + Math.random() * (w * 0.6);
+        bit.style.left = x + "px";
+        bit.style.top = (-20 - Math.random()*120) + "px";
+        bit.style.background = colors[Math.floor(Math.random()*colors.length)];
+        bit.style.transform = `translateY(-20px) rotate(${Math.random()*180}deg)`;
+        bit.style.animationDuration = (700 + Math.random()*650) + "ms";
+        bit.style.width = (8 + Math.random()*10) + "px";
+        bit.style.height = (10 + Math.random()*16) + "px";
+        confettiEl.appendChild(bit);
+        setTimeout(()=> bit.remove(), 1400);
+      }
     }
 
     function setStep(step){
@@ -1293,10 +1575,379 @@
       progressText.textContent = labels[step] || labels[0];
     }
 
+    function getLevel(){
+      return 1 + Math.floor(STATE.xp / 80);
+    }
+
+    function getUnlockedPerks(){
+      const level = getLevel();
+      return PERKS.filter(p=> level >= p.minLevel);
+    }
+
+    function hasPerk(id){
+      return getUnlockedPerks().some(p=> p.id === id);
+    }
+
+    function saveProgress(){
+      try{
+        localStorage.setItem("biliteracyQuest_progress_v1", JSON.stringify({
+          xp: STATE.xp,
+          badges: STATE.badges,
+          artifacts: STATE.artifacts
+        }));
+      } catch(_e){
+        // ignore
+      }
+    }
+
+    function loadProgress(){
+      try{
+        const raw = localStorage.getItem("biliteracyQuest_progress_v1");
+        const p = raw ? JSON.parse(raw) : null;
+        if(p && typeof p === "object"){
+          STATE.xp = Number(p.xp || 0);
+          STATE.badges = Array.isArray(p.badges) ? p.badges : [];
+          STATE.artifacts = Array.isArray(p.artifacts) ? p.artifacts : [];
+        }
+      } catch(_e){
+        // ignore
+      }
+    }
+
+    function getRunHistory(){
+      try{
+        const raw = localStorage.getItem("biliteracyQuest_runs_v1");
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch(_e){
+        return [];
+      }
+    }
+
+    function setRunHistory(arr){
+      try{
+        localStorage.setItem("biliteracyQuest_runs_v1", JSON.stringify(arr));
+      } catch(_e){
+        // ignore
+      }
+    }
+
+    function addRunToHistory(run){
+      const runs = getRunHistory();
+      runs.unshift(run);
+      setRunHistory(runs.slice(0, 10));
+    }
+
+    function renderRunHistory(){
+      if(!runHistory) return;
+      const runs = getRunHistory();
+      runHistory.innerHTML = "";
+      if(!runs.length){
+        const div = document.createElement("div");
+        div.className = "tiny";
+        div.textContent = "No runs yet. Finish a mission to see history here.";
+        runHistory.appendChild(div);
+        return;
+      }
+      runs.forEach((r, idx)=>{
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.gap = "8px";
+        row.style.alignItems = "center";
+        row.style.justifyContent = "space-between";
+        row.style.flexWrap = "wrap";
+        row.style.border = "1px solid var(--line)";
+        row.style.borderRadius = "14px";
+        row.style.padding = "10px";
+        row.style.background = "linear-gradient(180deg,#fff,var(--soft))";
+
+        const left = document.createElement("div");
+        left.className = "tiny";
+        left.style.color = "#222";
+        left.style.maxWidth = "320px";
+        left.style.lineHeight = "1.35";
+        left.textContent = `${r.missionTitle || r.missionId || "Mission"} • ${r.rank || "—"} • +${r.runXpEarned || 0} XP • ${formatDuration(r.durationMs || 0)}`;
+
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.gap = "8px";
+        right.style.flexWrap = "wrap";
+
+        const btnView = document.createElement("button");
+        btnView.type = "button";
+        btnView.className = "miniBtn";
+        btnView.textContent = "View";
+        btnView.onclick = ()=>{
+          VIEW_RUN = r;
+          hydrateSubmitViewFromRun();
+          screenSubmit.classList.remove("hidden");
+          screenMissions.classList.add("hidden");
+          screenScenario.classList.add("hidden");
+          screenSpellbook.classList.add("hidden");
+          setStep(4);
+          renderCanvasPostSafe();
+          showToast("Viewing run");
+          window.scrollTo({top:0, behavior:"smooth"});
+        };
+
+        const btnCode = document.createElement("button");
+        btnCode.type = "button";
+        btnCode.className = "miniBtn miniBtnGold";
+        btnCode.textContent = "Copy code";
+        btnCode.onclick = ()=>{
+          const code = buildReplayCode(r);
+          copyText(code);
+          showToast("Copied");
+        };
+
+        right.appendChild(btnView);
+        right.appendChild(btnCode);
+        row.appendChild(left);
+        row.appendChild(right);
+        runHistory.appendChild(row);
+      });
+    }
+
+    function getActiveRunForView(){
+      return VIEW_RUN || buildRunSnapshotFromState();
+    }
+
+    function b64urlEncodeUtf8(str){
+      const b64 = btoa(unescape(encodeURIComponent(str)));
+      return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+
+    function b64urlDecodeUtf8(str){
+      const b64 = str.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((str.length + 3) % 4);
+      return decodeURIComponent(escape(atob(b64)));
+    }
+
+    function buildRunSnapshotFromState(){
+      const m = currentMission();
+      const missionTitle = m ? m.title : "No mission selected";
+      const durationMs = runElapsedMs();
+      const impact = estimateImpact();
+      const decisions = [...STATE.decisionLog].sort((a,b)=> a.round - b.round).map(e=> ({
+        round: e.round,
+        prompt: e.prompt,
+        choice: e.choice,
+        choiceIndex: typeof e.choiceIndex === "number" ? e.choiceIndex : null,
+        outcome: e.outcome,
+        tradeoff: e.tradeoff
+      }));
+      const choiceIdxs = decisions.map(d=> (typeof d.choiceIndex === "number" ? d.choiceIndex : null));
+      const runXpEarned = Math.max(0, STATE.xp - (STATE.runXpStart || 0));
+      return {
+        v: 1,
+        runId: STATE.runId,
+        seed: STATE.runSeed,
+        daily: STATE.dailyMode,
+        missionId: STATE.missionId,
+        missionTitle,
+        durationMs,
+        rank: STATE.runRank,
+        impact,
+        score: {...STATE.score},
+        runXpEarned,
+        choiceIdxs,
+        decisions
+      };
+    }
+
+    function buildDecisionScrollFromRun(run){
+      const lines = [];
+      lines.push("THE BILITERACY QUEST – DECISION PATH SCROLL");
+      lines.push("Mission: " + (run.missionTitle || run.missionId || "—"));
+      if(run.runId) lines.push("Run ID: " + run.runId);
+      if(typeof run.durationMs === "number") lines.push("Time: " + formatDuration(run.durationMs));
+      if(run.rank) lines.push("Run rank: " + run.rank);
+      lines.push("");
+      const path = (run.decisions || []).slice().sort((a,b)=> a.round - b.round);
+      if(!path.length){
+        lines.push("No decisions found.");
+      } else {
+        path.forEach(e=>{
+          lines.push("Round " + e.round);
+          lines.push("Prompt: " + e.prompt);
+          lines.push("Choice: " + e.choice);
+          lines.push("Outcome: " + e.outcome);
+          lines.push("Tradeoff: " + e.tradeoff);
+          lines.push("");
+        });
+      }
+      const s = run.score || {base:0,theory:0,streak:0,spells:0,time:0};
+      lines.push("IMPACT METERS (ESTIMATE)");
+      lines.push("Access: " + (run.impact?.access ?? 0) + "/100");
+      lines.push("Rigor: " + (run.impact?.rigor ?? 0) + "/100");
+      lines.push("Voice: " + (run.impact?.voice ?? 0) + "/100");
+      lines.push("");
+      lines.push("Run XP earned: +" + (run.runXpEarned || 0));
+      lines.push("Score breakdown: base " + (s.base||0) + ", theory " + (s.theory||0) + ", streak " + (s.streak||0) + ", spells " + (s.spells||0) + ", time " + (s.time||0));
+      lines.push("");
+      lines.push("Replay code: " + buildReplayCode(run));
+      return lines.join("\n");
+    }
+
+    function buildReplayPayload(run){
+      return {
+        v: 1,
+        m: run.missionId,
+        s: run.seed,
+        c: (run.choiceIdxs || []).map(x=> (typeof x === "number" ? x : 0)),
+        t: Math.floor((run.durationMs || 0) / 1000),
+        r: run.rank || null
+      };
+    }
+
+    function buildReplayCode(run){
+      const payload = buildReplayPayload(run);
+      const json = JSON.stringify(payload);
+      return "BQ1:" + b64urlEncodeUtf8(json);
+    }
+
+    function runFromReplayPayload(payload){
+      if(!payload || payload.v !== 1) return null;
+      const missionId = payload.m;
+      const mission = MISSIONS.find(mm=> mm.id === missionId);
+      if(!mission) return null;
+      const seed = (payload.s >>> 0);
+      const choiceIdxs = Array.isArray(payload.c) ? payload.c : [];
+      const decisions = [];
+      for(let i=0;i<mission.rounds.length;i++){
+        const rd = mission.rounds[i];
+        const idx = Number(choiceIdxs[i] ?? 0);
+        const choice = rd.choices[idx] || rd.choices[0];
+        const entry = {
+          round: i+1,
+          prompt: rd.prompt,
+          choice: `${choice.label}. ${choice.title}`,
+          choiceIndex: Math.max(0, Math.min(rd.choices.length-1, idx)),
+          outcome: choice.outcome,
+          tradeoff: choice.tradeoff
+        };
+        decisions.push(entry);
+      }
+      const durationMs = Number(payload.t || 0) * 1000;
+      const fakeState = {
+        decisionLog: decisions,
+        savedJustifications: [],
+        appliedSpells: []
+      };
+      const impact = estimateImpactFromParts(fakeState);
+      return {
+        v: 1,
+        runId: "REPLAY",
+        seed,
+        daily: false,
+        missionId,
+        missionTitle: mission.title,
+        durationMs,
+        rank: payload.r || "REPLAY",
+        impact,
+        score: { base:0, theory:0, streak:0, spells:0, time:0 },
+        runXpEarned: 0,
+        choiceIdxs: decisions.map(d=> d.choiceIndex),
+        decisions
+      };
+    }
+
+    function hydrateSubmitViewFromRun(){
+      const run = getActiveRunForView();
+      if(scoreboard){
+        const s = run.score || {base:0,theory:0,streak:0,spells:0,time:0};
+        scoreboard.innerHTML = `
+          <b>Run</b>: ${run.missionTitle || "—"}<br/>
+          <b>Rank</b>: ${run.rank || "—"} • <b>Time</b>: ${formatDuration(run.durationMs || 0)} • <b>Run XP</b>: +${run.runXpEarned || 0}<br/>
+          <b>XP breakdown</b>: base ${s.base||0}, theory ${s.theory||0}, streak ${s.streak||0}, spells ${s.spells||0}, time ${s.time||0}<br/>
+          <b>Impact</b>: Access ${run.impact?.access ?? "—"} • Rigor ${run.impact?.rigor ?? "—"} • Voice ${run.impact?.voice ?? "—"}
+        `;
+      }
+      if(rankNote) rankNote.textContent = run.rank ? `Rank: ${run.rank}` : "—";
+      if(replayCode) replayCode.value = buildReplayCode(run);
+    }
+
+    function estimateImpactFromParts(parts){
+      const text = [
+        ...(parts.decisionLog || []).map(e=> `${e.choice} ${e.outcome} ${e.tradeoff}`),
+        ...(parts.savedJustifications || []).map(j=> j.text),
+        ...(parts.appliedSpells || [])
+      ].join(" ").toLowerCase();
+      const score = (words) => words.reduce((acc,w)=> acc + (text.includes(w) ? 1 : 0), 0);
+      const access = score(["access","equity","equitable","participation","entry point","include","excluded","identity","voice","multilingual"]);
+      const rigor  = score(["evidence","reasoning","analytic","analysis","precision","academic","justify","transfer","criteria","rubric"]);
+      const voice  = score(["dialogue","discussion","talk","rehearsal","peer","collaboration","critique","norms","reply"]);
+      const clamp01 = (n) => Math.max(0, Math.min(1, n));
+      const a = clamp01(access / 10);
+      const r = clamp01(rigor / 10);
+      const v = clamp01(voice / 10);
+      return { access: Math.round(a*100), rigor: Math.round(r*100), voice: Math.round(v*100) };
+    }
+
+    function renderResourcesAndGoals(){
+      if(!resourcesRow || !goalsText) return;
+      resourcesRow.innerHTML = "";
+      const pills = [];
+      pills.push({ cls:"tag tagGold", text:`⏳ Time ${STATE.timeTokens}` });
+      pills.push({ cls:"tag tagDark", text:`🧰 Support ${STATE.supportTokens}` });
+      if(STATE.dailyMode) pills.push({ cls:"tag tagGreen", text:"Daily" });
+      if(STATE.runSeed !== null) pills.push({ cls:"tag tagDark", text:`Seed ${String(STATE.runSeed).slice(0,6)}` });
+      pills.forEach(p=>{
+        const s = document.createElement("span");
+        s.className = p.cls;
+        s.textContent = p.text;
+        resourcesRow.appendChild(s);
+      });
+
+      const m = currentMission();
+      if(!m || !m.goals){
+        goalsText.textContent = "Pick a mission to see its goals.";
+        return;
+      }
+      const impact = estimateImpact();
+      goalsText.textContent = `Goals: Access ≥ ${m.goals.access}, Rigor ≥ ${m.goals.rigor}, Voice ≥ ${m.goals.voice}, Time ≤ ${m.goals.timeSec}s. Current: A${impact.access} R${impact.rigor} V${impact.voice}, ${formatDuration(runElapsedMs())}.`;
+    }
+
+    function renderPerksAndInventory(){
+      if(perksList){
+        perksList.innerHTML = "";
+        const perks = getUnlockedPerks();
+        if(!perks.length){
+          const span = document.createElement("span");
+          span.className = "tag tagDark";
+          span.textContent = "No perks yet (reach Level 2+)";
+          perksList.appendChild(span);
+        } else {
+          perks.forEach(p=>{
+            const span = document.createElement("span");
+            span.className = "tag tagGold";
+            span.title = p.blurb;
+            span.textContent = p.title;
+            perksList.appendChild(span);
+          });
+        }
+      }
+      if(inventoryList){
+        inventoryList.innerHTML = "";
+        if(!STATE.artifacts.length){
+          const span = document.createElement("span");
+          span.className = "tag tagDark";
+          span.textContent = "No artifacts yet";
+          inventoryList.appendChild(span);
+        } else {
+          STATE.artifacts.slice(0,10).forEach(a=>{
+            const span = document.createElement("span");
+            span.className = "tag tagGreen";
+            span.textContent = a;
+            inventoryList.appendChild(span);
+          });
+        }
+      }
+    }
+
     function updatePlayerPanel(){
       xpVal.textContent = STATE.xp;
       badgeVal.textContent = STATE.badges.length;
-      const level = 1 + Math.floor(STATE.xp / 80);
+      const level = getLevel();
       levelPill.textContent = "Level " + level;
 
       badgesList.innerHTML = "";
@@ -1313,6 +1964,10 @@
           badgesList.appendChild(span);
         });
       }
+
+      renderResourcesAndGoals();
+      renderPerksAndInventory();
+      renderRunHistory();
     }
 
     function renderMissions(){
@@ -1374,6 +2029,17 @@
       STATE.runStartedAtMs = Date.now();
       STATE.runEndedAtMs = null;
       STATE.runId = makeRunId();
+      STATE.runXpStart = STATE.xp;
+      STATE.runSeed = (STATE.dailyMode ? (STATE.dailySeed ^ hash32(missionId)) : (hash32(STATE.runId) ^ (Date.now() >>> 0))) >>> 0;
+      STATE.lensUsedRounds = [];
+
+      // Run resources
+      STATE.timeTokens = 2 + (hasPerk("timeBank") ? 1 : 0);
+      STATE.supportTokens = 2 + (hasPerk("supportSage") ? 1 : 0);
+      STATE.streakShieldUsed = false;
+
+      // Reset score breakdown
+      STATE.score = { base:0, theory:0, streak:0, spells:0, time:0 };
 
       setStep(1);
       screenMissions.classList.add("hidden");
@@ -1397,9 +2063,19 @@
       scenarioTitle.textContent = m.scenarioTitle;
       roundPill.textContent = "Round " + (STATE.round + 1) + " of " + m.rounds.length;
       streakPill.textContent = "Streak " + STATE.streak;
+      if(roundMapPill){
+        const dots = [];
+        for(let i=0;i<m.rounds.length;i++){
+          if(i < STATE.round) dots.push("●");
+          else if(i === STATE.round) dots.push("◉");
+          else dots.push("○");
+        }
+        roundMapPill.textContent = dots.join(" ");
+      }
 
-      scenarioScene.textContent = r.scene;
-      scenarioArtifact.textContent = r.artifact;
+      const variant = getRoundVariant(m.id, STATE.round);
+      scenarioScene.textContent = r.scene + (variant.scene ? ("\n\n" + variant.scene) : "");
+      scenarioArtifact.textContent = r.artifact + (variant.artifact ? ("\n\n" + variant.artifact) : "");
 
       decisionPrompt.textContent = r.prompt;
       decisionHint.textContent = r.hint;
@@ -1417,15 +2093,26 @@
           <div class="cap">${c.label}. ${c.title} <span>Choose</span></div>
           <p>${c.text}</p>
         `;
-        div.addEventListener("click", ()=> selectChoice(idx));
+        div.addEventListener("click", async ()=> {
+          await unlockAudio();
+          playSfx("select");
+          selectChoice(idx, div);
+        });
         choicesEl.appendChild(div);
       });
     }
 
-    function selectChoice(idx){
+    function selectChoice(idx, clickedEl){
       const r = roundData();
       const m = currentMission();
       if(!r || !m) return;
+
+      // Visual selection
+      [...choicesEl.querySelectorAll(".choice")].forEach(n=> n.classList.remove("selected","pop"));
+      if(clickedEl){
+        clickedEl.classList.add("selected","pop");
+        setTimeout(()=> clickedEl.classList.remove("pop"), 260);
+      }
 
       const c = r.choices[idx];
 
@@ -1444,6 +2131,7 @@
         round: STATE.round + 1,
         prompt: r.prompt,
         choice: `${c.label}. ${c.title}`,
+        choiceIndex: idx,
         outcome: c.outcome,
         tradeoff: c.tradeoff
       };
@@ -1455,7 +2143,25 @@
       updateLog();
 
       btnShowLens.onclick = ()=>{
-        lensPop.style.display = lensPop.style.display === "block" ? "none" : "block";
+        const opening = lensPop.style.display !== "block";
+        if(opening){
+          const roundNum = STATE.round + 1;
+          const alreadyUsed = STATE.lensUsedRounds.includes(roundNum);
+          if(!alreadyUsed){
+            if(STATE.supportTokens <= 0){
+              playSfx("fail");
+              showToast("Need a Support token to open lens hints");
+              return;
+            }
+            STATE.supportTokens -= 1;
+            STATE.lensUsedRounds.push(roundNum);
+            playSfx("select");
+            updatePlayerPanel();
+          }
+          lensPop.style.display = "block";
+        } else {
+          lensPop.style.display = "none";
+        }
       };
 
       btnNext.onclick = ()=> goNextRound();
@@ -1471,6 +2177,99 @@
     function makeRunId(){
       // Friendly, short, non-identifying run id
       return Math.random().toString(36).slice(2, 6).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+    }
+
+    function computeDailySeed(){
+      // Stable per-day seed (UTC) so everyone can compare runs.
+      const d = new Date();
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth()+1).padStart(2,"0");
+      const day = String(d.getUTCDate()).padStart(2,"0");
+      const key = `${y}-${m}-${day}`;
+      return hash32("BQ:" + key);
+    }
+
+    function hash32(str){
+      // FNV-1a 32-bit
+      let h = 0x811c9dc5;
+      for(let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(seed){
+      let a = seed >>> 0;
+      return function(){
+        a += 0x6D2B79F5;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const VARIANTS = {
+      bridge: {
+        scene: [
+          "Variant: Two students ask to discuss ideas bilingually before writing.",
+          "Variant: A student offers a strong oral example but lacks academic connectors.",
+          "Variant: The class has limited time because an assembly was announced."
+        ],
+        artifact: [
+          "Variant artifact: A quick oral transcript shows rich reasoning but missing transitions.",
+          "Variant artifact: A student used a diagram; the draft doesn’t reference it yet.",
+          "Variant artifact: Peer notes include one strong evidence example and two vague ones."
+        ]
+      },
+      maze: {
+        scene: [
+          "Variant: The text includes unfamiliar domain vocabulary and dense nominalizations.",
+          "Variant: Students are split—some decode well, others rely on context clues.",
+          "Variant: A student challenges the author’s claim but can’t cite the passage yet."
+        ],
+        artifact: [
+          "Variant artifact: Highlights cover entire paragraphs with no margin notes.",
+          "Variant artifact: A concept map is started but links are unlabeled.",
+          "Variant artifact: A CER draft has a claim but the evidence is paraphrased without detail."
+        ]
+      },
+      puzzle: {
+        scene: [
+          "Variant: A few students worry about public disagreement in a discussion board.",
+          "Variant: Several students prefer audio responses, but want clarity on grading.",
+          "Variant: Replies are frequent but rarely cite authors or readings."
+        ],
+        artifact: [
+          "Variant artifact: A thread shows ‘I agree’ replies with no warrants.",
+          "Variant artifact: A student drafts in two languages, then posts a short summary.",
+          "Variant artifact: A respectful critique starts strong but lacks evidence."
+        ]
+      },
+      remix: {
+        scene: [
+          "Variant: One student has low bandwidth; another uses a phone only.",
+          "Variant: Students ask for an example of ‘good’ multimodal work (not fancy).",
+          "Variant: Students want to know how accessibility will be checked."
+        ],
+        artifact: [
+          "Variant artifact: A visual post has no alt text and unclear labels.",
+          "Variant artifact: A short audio post is strong but missing key points in text.",
+          "Variant artifact: A rubric draft is too long—students miss the main criteria."
+        ]
+      }
+    };
+
+    function getRoundVariant(missionId, roundIndex){
+      const key = String(missionId || "");
+      const v = VARIANTS[key];
+      if(!v || STATE.runSeed === null) return { scene:"", artifact:"" };
+      const seed = (STATE.runSeed ^ hash32(key + ":" + String(roundIndex))) >>> 0;
+      const rng = mulberry32(seed);
+      const s = v.scene[Math.floor(rng() * v.scene.length)] || "";
+      const a = v.artifact[Math.floor(rng() * v.artifact.length)] || "";
+      return { scene: s, artifact: a };
     }
 
     function formatDuration(ms){
@@ -1501,14 +2300,21 @@
       TIMER_TICK = null;
     }
 
-    function addXP(amount){
-      STATE.xp += amount;
+    function addXP(amount, bucket){
+      const n = Number(amount || 0);
+      if(!n) return;
+      STATE.xp += n;
+      if(bucket && STATE.score && Object.prototype.hasOwnProperty.call(STATE.score, bucket)){
+        STATE.score[bucket] += n;
+      }
+      saveProgress();
       updatePlayerPanel();
     }
 
     function saveJustification(entry){
       const text = justification.value.trim();
       if(text.length < 40){
+        playSfx("fail");
         showToast("Add a bit more detail first");
         return;
       }
@@ -1521,12 +2327,16 @@
       const base = 20;
       const theoryBonus = containsTheory(text) ? 15 : 0;
       const streakBonus = Math.min(25, STATE.streak * 5);
-      addXP(base + theoryBonus + streakBonus);
+      addXP(base, "base");
+      if(theoryBonus) addXP(theoryBonus, "theory");
+      if(theoryBonus && hasPerk("scaffoldBoost")) addXP(10, "theory");
+      if(streakBonus) addXP(streakBonus, "streak");
 
       STATE.streak += 1;
       updateRunHUD();
 
       justificationStatus.textContent = "Saved and XP earned";
+      playSfx("save");
       showToast("Saved");
       updateLog();
       renderCanvasPostSafe();
@@ -1543,8 +2353,18 @@
         const currentRoundNumber = STATE.round + 1;
         const savedThisRound = STATE.savedJustifications.some(j=> j.round === currentRoundNumber);
         if(!savedThisRound) {
-          STATE.streak = 0;
-          updateRunHUD();
+          const canShield = hasPerk("streakShield") && !STATE.streakShieldUsed && STATE.timeTokens > 0 && STATE.streak > 0;
+          if(canShield){
+            STATE.timeTokens -= 1;
+            STATE.streakShieldUsed = true;
+            playSfx("save");
+            showToast("Streak Shield used (Time -1)");
+          } else {
+            STATE.streak = 0;
+            playSfx("fail");
+            updateRunHUD();
+          }
+          updatePlayerPanel();
         }
 
         STATE.round += 1;
@@ -1566,17 +2386,58 @@
       badgePicks.push(m.badges?.[0] || "Quest Finisher");
       if(usedTheory) badgePicks.push(m.badges?.[1] || "Theory Tactician");
 
+      const newlyUnlocked = [];
       badgePicks.forEach(b=>{
-        if(!STATE.badges.includes(b)) STATE.badges.push(b);
+        if(!STATE.badges.includes(b)){
+          STATE.badges.push(b);
+          newlyUnlocked.push(b);
+        }
       });
 
-      addXP(30);
-      updatePlayerPanel();
+      // Completion XP
+      addXP(30, "base");
+
+      // Time bonus (mission goal)
+      const elapsedSec = Math.floor(runElapsedMs() / 1000);
+      if(m.goals?.timeSec){
+        const diff = m.goals.timeSec - elapsedSec;
+        if(diff >= 0){
+          const bonus = 10 + Math.min(20, Math.floor(diff / 15));
+          addXP(bonus, "time");
+        }
+      }
+
+      // Artifact drop (meta-game)
+      if(m.artifactDrop && !STATE.artifacts.includes(m.artifactDrop)){
+        STATE.artifacts.push(m.artifactDrop);
+        saveProgress();
+      }
+
+      // Rank based on goals
+      const impact = estimateImpact();
+      const goals = m.goals || null;
+      if(goals){
+        const met = impact.access >= goals.access && impact.rigor >= goals.rigor && impact.voice >= goals.voice && elapsedSec <= goals.timeSec;
+        const close = (impact.access >= goals.access && impact.rigor >= goals.rigor) || (impact.access >= goals.access && impact.voice >= goals.voice) || (impact.rigor >= goals.rigor && impact.voice >= goals.voice);
+        STATE.runRank = met ? "VICTORY" : (close ? "PARTIAL" : "TRY AGAIN");
+      } else {
+        STATE.runRank = "COMPLETE";
+      }
+
+      if(newlyUnlocked.length){
+        playSfx("badge");
+        confettiBurst();
+      }
 
       STATE.runEndedAtMs = Date.now();
       stopRunTimer();
       updateRunHUD();
       recordBestRun();
+
+      // Snapshot this run for submit screen + history
+      VIEW_RUN = buildRunSnapshotFromState();
+      addRunToHistory(VIEW_RUN);
+      hydrateSubmitViewFromRun();
 
       setStep(4);
       screenScenario.classList.add("hidden");
@@ -1585,7 +2446,8 @@
       screenSpellbook.classList.add("hidden");
 
       badgeSummary.textContent = "Badges " + STATE.badges.length;
-      showToast("Quest complete");
+      showToast(STATE.runRank ? ("Run: " + STATE.runRank) : "Quest complete");
+      updatePlayerPanel();
       renderCanvasPostSafe();
       window.scrollTo({top:0, behavior:"smooth"});
     }
@@ -1681,7 +2543,17 @@
       lines.push("Voice: " + impact.voice + "/100");
       lines.push("");
 
-      lines.push("XP: " + STATE.xp);
+      if(STATE.runRank) lines.push("Run rank: " + STATE.runRank);
+      const runEarned = Math.max(0, STATE.xp - (STATE.runXpStart || 0));
+      lines.push("Run XP earned: +" + runEarned);
+      lines.push("Score breakdown: base " + (STATE.score.base||0) + ", theory " + (STATE.score.theory||0) + ", streak " + (STATE.score.streak||0) + ", spells " + (STATE.score.spells||0) + ", time " + (STATE.score.time||0));
+      lines.push("");
+
+      const code = buildReplayCode(buildRunSnapshotFromState());
+      lines.push("Replay code: " + code);
+      lines.push("");
+
+      lines.push("Total XP: " + STATE.xp);
       lines.push("Badges: " + (STATE.badges.length ? STATE.badges.join(", ") : "None"));
 
       logText.textContent = lines.join("\n");
@@ -1769,6 +2641,35 @@
       ctx.closePath();
     }
 
+    function drawQrToCanvas(ctx, text, x, y, size){
+      if(typeof window.qrcode !== "function") return;
+      try{
+        const qr = window.qrcode(0, "M");
+        qr.addData(String(text));
+        qr.make();
+        const count = qr.getModuleCount();
+        const cell = Math.floor(size / count);
+        const qrSize = cell * count;
+        // background
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        roundRect(ctx, x-8, y-8, qrSize+16, qrSize+16, 12);
+        ctx.fill();
+        // modules
+        for(let r=0;r<count;r++){
+          for(let c=0;c<count;c++){
+            if(qr.isDark(r,c)){
+              ctx.fillStyle = "#111";
+              ctx.fillRect(x + c*cell, y + r*cell, cell, cell);
+            }
+          }
+        }
+        ctx.restore();
+      } catch(_e){
+        // ignore
+      }
+    }
+
     function renderCanvasPostSafe(){
       try{ renderCanvasPost(); }
       catch(_e){ /* ignore render failures */ }
@@ -1781,6 +2682,8 @@
 
       const W = postCanvas.width;
       const H = postCanvas.height;
+
+      const run = getActiveRunForView();
 
       // Background
       ctx.clearRect(0,0,W,H);
@@ -1799,8 +2702,7 @@
       ctx.fillRect(0,0,W,H);
 
       // Header
-      const m = currentMission();
-      const title = m ? m.title : "Biliteracy Quest";
+      const title = run.missionTitle || "Biliteracy Quest";
       ctx.fillStyle = "rgba(255,255,255,.92)";
       ctx.font = "900 44px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
       ctx.textBaseline = "top";
@@ -1813,10 +2715,10 @@
       // Meta pills
       let px = 56, py = 148;
       const meta = [];
-      if(STATE.runId) meta.push("Run " + STATE.runId);
-      meta.push("Time " + formatDuration(runElapsedMs()));
-      meta.push("XP " + STATE.xp);
-      meta.push("Badges " + STATE.badges.length);
+      if(run.runId) meta.push("Run " + run.runId);
+      meta.push("Time " + formatDuration(run.durationMs || 0));
+      if(run.rank) meta.push(run.rank);
+      meta.push("Run XP +" + (run.runXpEarned || 0));
       meta.forEach((t)=>{
         const pill = drawPill(ctx, px, py, t);
         px += pill.w + 12;
@@ -1834,7 +2736,7 @@
       ctx.restore();
 
       // Path timeline
-      const path = [...STATE.decisionLog].sort((a,b)=> a.round - b.round);
+      const path = [...(run.decisions || [])].sort((a,b)=> a.round - b.round);
       const left = cardX + 44;
       const top = cardY + 40;
       const right = cardX + cardW - 44;
@@ -1895,7 +2797,7 @@
       });
 
       // Footer: badges + spells (as tags)
-      const impact = estimateImpact();
+      const impact = run.impact || {access:0, rigor:0, voice:0};
       const footerY = cardY + cardH - 62;
       ctx.save();
       ctx.fillStyle = "rgba(255,255,255,.70)";
@@ -1903,6 +2805,10 @@
       ctx.textBaseline = "middle";
       ctx.fillText("Impact: Access " + impact.access + " • Rigor " + impact.rigor + " • Voice " + impact.voice, cardX + 44, footerY);
       ctx.restore();
+
+      // QR code (replay)
+      const code = buildReplayCode(run);
+      drawQrToCanvas(ctx, code, W - 56 - 160, cardY + cardH - 160, 160);
 
       // Small note for Canvas
       ctx.save();
@@ -1968,22 +2874,102 @@
     }
 
     // Buttons
-    btnCopyLog.addEventListener("click", ()=> copyText(logText.textContent));
+    btnCopyLog.addEventListener("click", async ()=> {
+      await unlockAudio();
+      playSfx("select");
+      copyText(logText.textContent);
+    });
     btnRenderPostInline.addEventListener("click", ()=>{
+      unlockAudio();
+      playSfx("select");
       renderCanvasPostSafe();
       showToast("Updated");
     });
-    btnFinish.addEventListener("click", ()=> finishMission());
-    btnCopyAll.addEventListener("click", ()=> copyText(logText.textContent));
-    if(btnCopyPostImage) btnCopyPostImage.addEventListener("click", ()=> copyPostImage());
-    if(btnDownloadPostImage) btnDownloadPostImage.addEventListener("click", ()=> downloadPostImage());
+    btnFinish.addEventListener("click", async ()=> {
+      await unlockAudio();
+      playSfx("select");
+      finishMission();
+    });
+    btnCopyAll.addEventListener("click", async ()=> {
+      await unlockAudio();
+      playSfx("select");
+      const run = getActiveRunForView();
+      copyText(buildDecisionScrollFromRun(run));
+    });
+    if(btnCopyPostImage) btnCopyPostImage.addEventListener("click", async ()=> {
+      await unlockAudio();
+      playSfx("select");
+      copyPostImage();
+    });
+    if(btnDownloadPostImage) btnDownloadPostImage.addEventListener("click", async ()=> {
+      await unlockAudio();
+      playSfx("select");
+      downloadPostImage();
+    });
     if(btnReRenderPost) btnReRenderPost.addEventListener("click", ()=>{
+      unlockAudio();
+      playSfx("select");
       renderCanvasPostSafe();
       postStatus.textContent = "Re-rendered";
       showToast("Updated");
     });
 
-    btnStart.addEventListener("click", ()=>{
+    if(btnReplayMission) btnReplayMission.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      const run = getActiveRunForView();
+      if(!run.missionId){
+        showToast("No mission to replay");
+        return;
+      }
+      VIEW_RUN = null;
+      startMission(run.missionId);
+    });
+
+    if(btnCopyReplayCode) btnCopyReplayCode.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      if(replayCode) copyText(replayCode.value.trim());
+    });
+
+    if(btnLoadReplayCode) btnLoadReplayCode.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      const raw = (replayCode ? replayCode.value.trim() : "");
+      if(!raw){
+        showToast("Paste a code first");
+        return;
+      }
+      try{
+        const code = raw.startsWith("BQ1:") ? raw.slice(4) : raw;
+        const json = b64urlDecodeUtf8(code);
+        const payload = JSON.parse(json);
+        const run = runFromReplayPayload(payload);
+        if(!run){
+          showToast("Invalid code");
+          return;
+        }
+        VIEW_RUN = run;
+        hydrateSubmitViewFromRun();
+        renderCanvasPostSafe();
+        showToast("Replay loaded");
+      } catch(_e){
+        showToast("Invalid code");
+      }
+    });
+
+    if(btnClearReplayView) btnClearReplayView.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      VIEW_RUN = null;
+      hydrateSubmitViewFromRun();
+      renderCanvasPostSafe();
+      showToast("Exited replay view");
+    });
+
+    btnStart.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
       setStep(0);
       screenMissions.classList.remove("hidden");
       screenScenario.classList.add("hidden");
@@ -1993,7 +2979,9 @@
       window.scrollTo({top:0, behavior:"smooth"});
     });
 
-    btnSpellbook.addEventListener("click", ()=>{
+    btnSpellbook.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
       screenSpellbook.classList.toggle("hidden");
       screenMissions.classList.add("hidden");
       screenScenario.classList.add("hidden");
@@ -2003,12 +2991,59 @@
       window.scrollTo({top:0, behavior:"smooth"});
     });
 
+    if(btnDaily) btnDaily.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      STATE.dailyMode = !STATE.dailyMode;
+      if(STATE.dailyMode){
+        STATE.dailySeed = computeDailySeed();
+        showToast("Daily challenge on");
+      } else {
+        showToast("Daily challenge off");
+      }
+      saveSettings();
+      applySettingsToUI();
+      // Return to mission hub to start a daily run.
+      setStep(0);
+      screenMissions.classList.remove("hidden");
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+
+    if(btnSound) btnSound.addEventListener("click", async ()=>{
+      await unlockAudio();
+      STATE.soundOn = !STATE.soundOn;
+      saveSettings();
+      applySettingsToUI();
+      playSfx("select");
+      showToast(STATE.soundOn ? "Sound on" : "Sound off");
+    });
+
+    if(btnMotion) btnMotion.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      STATE.motionOn = !STATE.motionOn;
+      saveSettings();
+      applySettingsToUI();
+      showToast(STATE.motionOn ? "Motion on" : "Motion off");
+    });
+
     btnReset.addEventListener("click", resetAll);
+    if(btnClearHistory) btnClearHistory.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      setRunHistory([]);
+      renderRunHistory();
+      showToast("History cleared");
+    });
 
     function resetAll(){
       STATE.step = 0;
       STATE.xp = 0;
       STATE.badges = [];
+      STATE.artifacts = [];
       STATE.missionId = null;
       STATE.round = 0;
       STATE.decisionLog = [];
@@ -2018,6 +3053,16 @@
       STATE.runEndedAtMs = null;
       STATE.streak = 0;
       STATE.runId = null;
+      STATE.runSeed = null;
+      STATE.runRank = null;
+      STATE.timeTokens = 0;
+      STATE.supportTokens = 0;
+      STATE.streakShieldUsed = false;
+      STATE.lensUsedRounds = [];
+      STATE.runXpStart = 0;
+      STATE.score = { base:0, theory:0, streak:0, spells:0, time:0 };
+      VIEW_RUN = null;
+      try{ localStorage.removeItem("biliteracyQuest_progress_v1"); } catch(_e){}
       stopRunTimer();
       setStep(0);
       updatePlayerPanel();
@@ -2075,11 +3120,19 @@
           const sp = SPELLS.find(s=> s.id === id);
           if(!sp) return;
           if(!STATE.appliedSpells.includes(sp.title)){
+            if(STATE.supportTokens <= 0){
+              playSfx("fail");
+              showToast("Need a Support token to apply a spell");
+              return;
+            }
+            STATE.supportTokens -= 1;
             STATE.appliedSpells.push(sp.title);
-            addXP(20);
+            addXP(20, "spells");
+            playSfx("save");
             showToast("Spell applied");
             updateLog();
             renderCanvasPostSafe();
+            updatePlayerPanel();
           } else {
             showToast("Already applied");
           }
@@ -2108,11 +3161,16 @@
         }
         if(s === 4){
           if(STATE.missionId){
+            if(!VIEW_RUN){
+              VIEW_RUN = buildRunSnapshotFromState();
+            }
+            hydrateSubmitViewFromRun();
             screenSubmit.classList.remove("hidden");
             screenMissions.classList.add("hidden");
             screenScenario.classList.add("hidden");
             screenSpellbook.classList.add("hidden");
             setStep(4);
+            renderCanvasPostSafe();
           } else {
             showToast("Finish a mission first");
           }
@@ -2121,6 +3179,9 @@
     });
 
     // Init
+    STATE.dailySeed = computeDailySeed();
+    loadSettings();
+    loadProgress();
     renderMissions();
     setStep(0);
     updatePlayerPanel();
