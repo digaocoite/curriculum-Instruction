@@ -462,6 +462,46 @@
       z-index:99;
       font-size:13px;
     }
+    .canvasWrap{
+      margin-top:12px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg,#fff,var(--soft));
+      padding:12px;
+      overflow:hidden;
+    }
+    canvas.postCanvas{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:16px;
+      border:1px solid rgba(0,0,0,.10);
+      background:#0b0b0d;
+    }
+    .canvasActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .helpRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:10px;
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:11px;
+      border:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,var(--soft));
+      border-radius:10px;
+      padding:4px 8px;
+      color:#111;
+    }
     .hidden{display:none!important}
     .divider{height:1px; background:var(--line); margin:12px 0}
     .footerNote{
@@ -568,7 +608,11 @@
             <div class="panel">
               <div class="panelHeader">
                 <h3 id="scenarioTitle">Scenario</h3>
-                <div class="pill" id="roundPill">Round 1 of 3</div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                  <div class="pill" id="roundPill">Round 1 of 3</div>
+                  <div class="pill" id="runTimerPill">⏱ 00:00</div>
+                  <div class="pill" id="streakPill">Streak 0</div>
+                </div>
               </div>
 
               <div class="panelBody">
@@ -630,6 +674,7 @@
                   <b>Decision Path Scroll</b>
                   <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="button" class="miniBtn" id="btnCopyLog">Copy scroll</button>
+                    <button type="button" class="miniBtn" id="btnRenderPostInline">Update Canvas post image</button>
                     <button type="button" class="miniBtn miniBtnGold" id="btnFinish">Finish mission</button>
                   </div>
                 </div>
@@ -660,6 +705,26 @@
                   <h4>Copy everything</h4>
                   <p class="tiny" style="margin:0 0 10px;">This copy includes your scroll and any saved justification text.</p>
                   <button type="button" class="btn btnGold" id="btnCopyAll">Copy for Canvas</button>
+                </div>
+
+                <div class="canvasWrap">
+                  <h4 style="margin:0 0 6px;">Canvas Post Image (your exact path)</h4>
+                  <p class="tiny" style="margin:0 0 10px;">
+                    This generates an image version of your run (mission, choices, outcomes, XP, badges). You can copy it or download it, then add it to a Canvas post.
+                  </p>
+                  <canvas id="postCanvas" class="postCanvas" width="1200" height="675" aria-label="Canvas post image preview"></canvas>
+                  <div class="canvasActions">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                      <button type="button" class="btn btnGold" id="btnCopyPostImage">Copy image</button>
+                      <button type="button" class="btn" id="btnDownloadPostImage">Download PNG</button>
+                      <button type="button" class="btn btnGhost" id="btnReRenderPost">Re-render</button>
+                    </div>
+                    <span class="note" id="postStatus">Ready</span>
+                  </div>
+                  <div class="helpRow">
+                    <span class="pill"><span class="kbd">Tip</span> If “Copy image” is blocked, use “Download PNG” and upload in Canvas.</span>
+                    <span class="pill"><span class="kbd">Also</span> The text scroll is still best for accessibility.</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -724,7 +789,11 @@
     const STATE = {
       step: 0, xp: 0, badges: [],
       missionId: null, round: 0,
-      decisionLog: [], savedJustifications: [], appliedSpells: []
+      decisionLog: [], savedJustifications: [], appliedSpells: [],
+      runStartedAtMs: null,
+      runEndedAtMs: null,
+      streak: 0,
+      runId: null
     };
 
     const SPELLS = [
@@ -1155,6 +1224,8 @@
 
     const scenarioTitle = el("scenarioTitle");
     const roundPill = el("roundPill");
+    const runTimerPill = el("runTimerPill");
+    const streakPill = el("streakPill");
     const scenarioScene = el("scenarioScene");
     const scenarioArtifact = el("scenarioArtifact");
     const decisionPrompt = el("decisionPrompt");
@@ -1175,6 +1246,7 @@
 
     const logText = el("logText");
     const btnCopyLog = el("btnCopyLog");
+    const btnRenderPostInline = el("btnRenderPostInline");
     const btnFinish = el("btnFinish");
 
     const btnStart = el("btnStart");
@@ -1187,6 +1259,13 @@
     const btnCopyAll = el("btnCopyAll");
 
     const toast = el("toast");
+    const postCanvas = el("postCanvas");
+    const btnCopyPostImage = el("btnCopyPostImage");
+    const btnDownloadPostImage = el("btnDownloadPostImage");
+    const btnReRenderPost = el("btnReRenderPost");
+    const postStatus = el("postStatus");
+
+    let TIMER_TICK = null;
 
     function showToast(msg){
       toast.textContent = msg;
@@ -1291,6 +1370,10 @@
       STATE.decisionLog = [];
       STATE.savedJustifications = [];
       STATE.appliedSpells = [];
+      STATE.streak = 0;
+      STATE.runStartedAtMs = Date.now();
+      STATE.runEndedAtMs = null;
+      STATE.runId = makeRunId();
 
       setStep(1);
       screenMissions.classList.add("hidden");
@@ -1300,7 +1383,9 @@
 
       renderRound();
       updateLog();
+      updateRunHUD();
       updatePlayerPanel();
+      startRunTimer();
       window.scrollTo({top:0, behavior:"smooth"});
     }
 
@@ -1311,6 +1396,7 @@
 
       scenarioTitle.textContent = m.scenarioTitle;
       roundPill.textContent = "Round " + (STATE.round + 1) + " of " + m.rounds.length;
+      streakPill.textContent = "Streak " + STATE.streak;
 
       scenarioScene.textContent = r.scene;
       scenarioArtifact.textContent = r.artifact;
@@ -1382,6 +1468,39 @@
       return t.includes("gibbons") || t.includes("hornberger") || t.includes("multimodal") || t.includes("academic") || t.includes("scaffold");
     }
 
+    function makeRunId(){
+      // Friendly, short, non-identifying run id
+      return Math.random().toString(36).slice(2, 6).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+    }
+
+    function formatDuration(ms){
+      const s = Math.max(0, Math.floor(ms / 1000));
+      const mm = String(Math.floor(s / 60)).padStart(2,"0");
+      const ss = String(s % 60).padStart(2,"0");
+      return `${mm}:${ss}`;
+    }
+
+    function runElapsedMs(){
+      if(!STATE.runStartedAtMs) return 0;
+      const end = STATE.runEndedAtMs ?? Date.now();
+      return Math.max(0, end - STATE.runStartedAtMs);
+    }
+
+    function updateRunHUD(){
+      if(runTimerPill) runTimerPill.textContent = "⏱ " + formatDuration(runElapsedMs());
+      if(streakPill) streakPill.textContent = "Streak " + STATE.streak;
+    }
+
+    function startRunTimer(){
+      if(TIMER_TICK) clearInterval(TIMER_TICK);
+      TIMER_TICK = setInterval(updateRunHUD, 400);
+    }
+
+    function stopRunTimer(){
+      if(TIMER_TICK) clearInterval(TIMER_TICK);
+      TIMER_TICK = null;
+    }
+
     function addXP(amount){
       STATE.xp += amount;
       updatePlayerPanel();
@@ -1400,12 +1519,17 @@
       else STATE.savedJustifications.push(saved);
 
       const base = 20;
-      const bonus = containsTheory(text) ? 15 : 0;
-      addXP(base + bonus);
+      const theoryBonus = containsTheory(text) ? 15 : 0;
+      const streakBonus = Math.min(25, STATE.streak * 5);
+      addXP(base + theoryBonus + streakBonus);
+
+      STATE.streak += 1;
+      updateRunHUD();
 
       justificationStatus.textContent = "Saved and XP earned";
       showToast("Saved");
       updateLog();
+      renderCanvasPostSafe();
       setStep(Math.max(STATE.step, 2));
     }
 
@@ -1414,9 +1538,19 @@
       if(!m) return;
 
       if(STATE.round < m.rounds.length - 1){
+        // If the player advances without saving this round’s justification,
+        // the XP streak breaks (game-like feedback loop).
+        const currentRoundNumber = STATE.round + 1;
+        const savedThisRound = STATE.savedJustifications.some(j=> j.round === currentRoundNumber);
+        if(!savedThisRound) {
+          STATE.streak = 0;
+          updateRunHUD();
+        }
+
         STATE.round += 1;
         renderRound();
         updateLog();
+        renderCanvasPostSafe();
         setStep(Math.max(STATE.step, 1));
       } else {
         finishMission();
@@ -1439,6 +1573,11 @@
       addXP(30);
       updatePlayerPanel();
 
+      STATE.runEndedAtMs = Date.now();
+      stopRunTimer();
+      updateRunHUD();
+      recordBestRun();
+
       setStep(4);
       screenScenario.classList.add("hidden");
       screenSubmit.classList.remove("hidden");
@@ -1447,7 +1586,49 @@
 
       badgeSummary.textContent = "Badges " + STATE.badges.length;
       showToast("Quest complete");
+      renderCanvasPostSafe();
       window.scrollTo({top:0, behavior:"smooth"});
+    }
+
+    function recordBestRun(){
+      try{
+        const key = "biliteracyQuest_bestRun_v1";
+        const best = JSON.parse(localStorage.getItem(key) || "null");
+        const run = {
+          xp: STATE.xp,
+          badges: STATE.badges.length,
+          missionId: STATE.missionId,
+          durationMs: runElapsedMs(),
+          endedAt: Date.now()
+        };
+        // Best = highest XP; tie-breaker = shorter time.
+        const isBetter = !best || run.xp > best.xp || (run.xp === best.xp && run.durationMs < best.durationMs);
+        if(isBetter) localStorage.setItem(key, JSON.stringify(run));
+      } catch(_e){
+        // ignore storage failures
+      }
+    }
+
+    function estimateImpact(){
+      // Lightweight “real game” feel: infer three meters from player-visible text.
+      // Returns 0..100 values for Access / Rigor / Voice
+      const text = [
+        ...STATE.decisionLog.map(e=> `${e.choice} ${e.outcome} ${e.tradeoff}`),
+        ...STATE.savedJustifications.map(j=> j.text),
+        ...STATE.appliedSpells
+      ].join(" ").toLowerCase();
+
+      const score = (words) => words.reduce((acc,w)=> acc + (text.includes(w) ? 1 : 0), 0);
+      const access = score(["access","equity","equitable","participation","entry point","include","excluded","identity","voice","multilingual"]);
+      const rigor  = score(["evidence","reasoning","analytic","analysis","precision","academic","justify","transfer","criteria","rubric"]);
+      const voice  = score(["dialogue","discussion","talk","rehearsal","peer","collaboration","critique","norms","reply"]);
+
+      const clamp01 = (n) => Math.max(0, Math.min(1, n));
+      // 0..1 normalized (soft caps)
+      const a = clamp01(access / 10);
+      const r = clamp01(rigor / 10);
+      const v = clamp01(voice / 10);
+      return { access: Math.round(a*100), rigor: Math.round(r*100), voice: Math.round(v*100) };
     }
 
     function updateLog(){
@@ -1457,6 +1638,8 @@
 
       lines.push("THE BILITERACY QUEST – DECISION PATH SCROLL");
       lines.push("Mission: " + title);
+      if(STATE.runId) lines.push("Run ID: " + STATE.runId);
+      if(STATE.runStartedAtMs) lines.push("Time: " + formatDuration(runElapsedMs()));
       lines.push("");
 
       if(STATE.decisionLog.length === 0){
@@ -1491,6 +1674,13 @@
         lines.push("");
       }
 
+      const impact = estimateImpact();
+      lines.push("IMPACT METERS (ESTIMATE)");
+      lines.push("Access: " + impact.access + "/100");
+      lines.push("Rigor: " + impact.rigor + "/100");
+      lines.push("Voice: " + impact.voice + "/100");
+      lines.push("");
+
       lines.push("XP: " + STATE.xp);
       lines.push("Badges: " + (STATE.badges.length ? STATE.badges.join(", ") : "None"));
 
@@ -1498,13 +1688,300 @@
     }
 
     function copyText(text){
-      navigator.clipboard.writeText(text).then(()=> showToast("Copied"));
+      // Clipboard API can fail on some contexts (e.g., file://). Provide a fallback.
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(()=> showToast("Copied")).catch(()=> fallbackCopy(text));
+        return;
+      }
+      fallbackCopy(text);
+    }
+
+    function fallbackCopy(text){
+      try{
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "true");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        ta.remove();
+        showToast(ok ? "Copied" : "Copy failed");
+      } catch(_e){
+        showToast("Copy failed");
+      }
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines=Infinity){
+      const words = (text || "").split(/\s+/).filter(Boolean);
+      let line = "";
+      let lines = 0;
+      for(const word of words){
+        const test = line ? line + " " + word : word;
+        if(ctx.measureText(test).width > maxWidth && line){
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+          lines += 1;
+          if(lines >= maxLines) return y;
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if(line && lines < maxLines){
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+      }
+      return y;
+    }
+
+    function drawPill(ctx, x, y, text, opts={}){
+      const padX = opts.padX ?? 14;
+      const padY = opts.padY ?? 9;
+      const r = opts.radius ?? 16;
+      ctx.font = opts.font ?? "700 22px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      const w = ctx.measureText(text).width + padX*2;
+      const h = (opts.height ?? 40);
+      ctx.save();
+      ctx.fillStyle = opts.fill ?? "rgba(255,255,255,.10)";
+      ctx.strokeStyle = opts.stroke ?? "rgba(241,184,45,.28)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, r);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = opts.color ?? "rgba(255,255,255,.92)";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x + padX, y + h/2);
+      ctx.restore();
+      return {w, h};
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function renderCanvasPostSafe(){
+      try{ renderCanvasPost(); }
+      catch(_e){ /* ignore render failures */ }
+    }
+
+    function renderCanvasPost(){
+      if(!postCanvas) return;
+      const ctx = postCanvas.getContext("2d");
+      if(!ctx) return;
+
+      const W = postCanvas.width;
+      const H = postCanvas.height;
+
+      // Background
+      ctx.clearRect(0,0,W,H);
+      const bg = ctx.createLinearGradient(0,0,W,H);
+      bg.addColorStop(0, "#070709");
+      bg.addColorStop(.55, "#101014");
+      bg.addColorStop(1, "#060608");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,W,H);
+
+      // Accents
+      const glow = ctx.createRadialGradient(W*0.2, H*0.15, 10, W*0.2, H*0.15, H*0.8);
+      glow.addColorStop(0, "rgba(241,184,45,.30)");
+      glow.addColorStop(1, "rgba(241,184,45,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0,0,W,H);
+
+      // Header
+      const m = currentMission();
+      const title = m ? m.title : "Biliteracy Quest";
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "900 44px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "top";
+      ctx.fillText("THE BILITERACY QUEST", 56, 42);
+
+      ctx.fillStyle = "rgba(255,255,255,.80)";
+      ctx.font = "800 30px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText("Mission: " + title, 56, 98);
+
+      // Meta pills
+      let px = 56, py = 148;
+      const meta = [];
+      if(STATE.runId) meta.push("Run " + STATE.runId);
+      meta.push("Time " + formatDuration(runElapsedMs()));
+      meta.push("XP " + STATE.xp);
+      meta.push("Badges " + STATE.badges.length);
+      meta.forEach((t)=>{
+        const pill = drawPill(ctx, px, py, t);
+        px += pill.w + 12;
+      });
+
+      // Main card
+      const cardX = 56, cardY = 214, cardW = W - 112, cardH = H - 270;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.06)";
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // Path timeline
+      const path = [...STATE.decisionLog].sort((a,b)=> a.round - b.round);
+      const left = cardX + 44;
+      const top = cardY + 40;
+      const right = cardX + cardW - 44;
+      const lineX = left + 22;
+      const rowGap = 120;
+
+      // Vertical line
+      ctx.save();
+      ctx.strokeStyle = "rgba(241,184,45,.55)";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+      const lineTop = top + 18;
+      const lineBot = top + Math.max(0, (path.length-1))*rowGap + 18;
+      ctx.beginPath();
+      ctx.moveTo(lineX, lineTop);
+      ctx.lineTo(lineX, lineBot);
+      ctx.stroke();
+      ctx.restore();
+
+      // Nodes + text
+      ctx.textBaseline = "top";
+      path.forEach((e, i)=>{
+        const y = top + i*rowGap;
+
+        // Node
+        ctx.save();
+        ctx.fillStyle = "#F1B82D";
+        ctx.shadowColor = "rgba(241,184,45,.35)";
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(lineX, y + 18, 16, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = "#111";
+        ctx.font = "900 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(e.round), lineX, y + 18);
+        ctx.restore();
+
+        // Text block
+        const tx = lineX + 34;
+        const maxW = right - tx;
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "900 24px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("Round " + e.round + " • " + e.choice, tx, y);
+
+        ctx.fillStyle = "rgba(255,255,255,.80)";
+        ctx.font = "650 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        let yy = y + 34;
+        yy = wrapText(ctx, "Outcome: " + e.outcome, tx, yy, maxW, 22, 2);
+        ctx.fillStyle = "rgba(255,255,255,.66)";
+        wrapText(ctx, "Tradeoff: " + e.tradeoff, tx, yy, maxW, 22, 2);
+      });
+
+      // Footer: badges + spells (as tags)
+      const impact = estimateImpact();
+      const footerY = cardY + cardH - 62;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.70)";
+      ctx.font = "800 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Impact: Access " + impact.access + " • Rigor " + impact.rigor + " • Voice " + impact.voice, cardX + 44, footerY);
+      ctx.restore();
+
+      // Small note for Canvas
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.46)";
+      ctx.font = "650 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Copy/paste or upload this image into Canvas. Text scroll recommended for accessibility.", 56, H - 22);
+      ctx.restore();
+    }
+
+    async function copyPostImage(){
+      if(!postCanvas) return;
+      postStatus.textContent = "Copying…";
+      renderCanvasPostSafe();
+      const blob = await new Promise((resolve)=> postCanvas.toBlob(resolve, "image/png"));
+      if(!blob){
+        postStatus.textContent = "Could not render image";
+        showToast("Copy failed");
+        return;
+      }
+      try{
+        if(navigator.clipboard && window.ClipboardItem){
+          await navigator.clipboard.write([new ClipboardItem({"image/png": blob})]);
+          postStatus.textContent = "Copied image";
+          showToast("Copied");
+          return;
+        }
+        // Fallback: download
+        downloadBlob(blob, "biliteracy-quest-path.png");
+        postStatus.textContent = "Downloaded (copy not supported)";
+        showToast("Downloaded");
+      } catch(_e){
+        // Fallback: download
+        downloadBlob(blob, "biliteracy-quest-path.png");
+        postStatus.textContent = "Downloaded (clipboard blocked)";
+        showToast("Downloaded");
+      }
+    }
+
+    function downloadBlob(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 500);
+    }
+
+    async function downloadPostImage(){
+      if(!postCanvas) return;
+      postStatus.textContent = "Preparing download…";
+      renderCanvasPostSafe();
+      const blob = await new Promise((resolve)=> postCanvas.toBlob(resolve, "image/png"));
+      if(!blob){
+        postStatus.textContent = "Could not render image";
+        return;
+      }
+      downloadBlob(blob, "biliteracy-quest-path.png");
+      postStatus.textContent = "Downloaded PNG";
+      showToast("Downloaded");
     }
 
     // Buttons
     btnCopyLog.addEventListener("click", ()=> copyText(logText.textContent));
+    btnRenderPostInline.addEventListener("click", ()=>{
+      renderCanvasPostSafe();
+      showToast("Updated");
+    });
     btnFinish.addEventListener("click", ()=> finishMission());
     btnCopyAll.addEventListener("click", ()=> copyText(logText.textContent));
+    if(btnCopyPostImage) btnCopyPostImage.addEventListener("click", ()=> copyPostImage());
+    if(btnDownloadPostImage) btnDownloadPostImage.addEventListener("click", ()=> downloadPostImage());
+    if(btnReRenderPost) btnReRenderPost.addEventListener("click", ()=>{
+      renderCanvasPostSafe();
+      postStatus.textContent = "Re-rendered";
+      showToast("Updated");
+    });
 
     btnStart.addEventListener("click", ()=>{
       setStep(0);
@@ -1512,6 +1989,7 @@
       screenScenario.classList.add("hidden");
       screenSubmit.classList.add("hidden");
       screenSpellbook.classList.add("hidden");
+      stopRunTimer();
       window.scrollTo({top:0, behavior:"smooth"});
     });
 
@@ -1536,10 +2014,16 @@
       STATE.decisionLog = [];
       STATE.savedJustifications = [];
       STATE.appliedSpells = [];
+      STATE.runStartedAtMs = null;
+      STATE.runEndedAtMs = null;
+      STATE.streak = 0;
+      STATE.runId = null;
+      stopRunTimer();
       setStep(0);
       updatePlayerPanel();
       renderMissions();
       updateLog();
+      renderCanvasPostSafe();
       screenMissions.classList.remove("hidden");
       screenScenario.classList.add("hidden");
       screenSubmit.classList.add("hidden");
@@ -1595,6 +2079,7 @@
             addXP(20);
             showToast("Spell applied");
             updateLog();
+            renderCanvasPostSafe();
           } else {
             showToast("Already applied");
           }
@@ -1640,6 +2125,7 @@
     setStep(0);
     updatePlayerPanel();
     updateLog();
+    renderCanvasPostSafe();
   </script>
 </body>
 </html>
