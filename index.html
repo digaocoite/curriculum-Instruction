@@ -546,6 +546,46 @@
       transition:none !important;
       scroll-behavior:auto !important;
     }
+
+    /* How-to modal */
+    .modalOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      z-index:130;
+      padding:18px;
+    }
+    .modal{
+      max-width:920px;
+      margin:5vh auto;
+      background:#fff;
+      border-radius:22px;
+      border:1px solid rgba(241,184,45,.25);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .modalHeader{
+      padding:14px 16px;
+      background:linear-gradient(135deg, rgba(0,0,0,.95), rgba(0,0,0,.86));
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid rgba(241,184,45,.25);
+    }
+    .modalHeader h3{margin:0; font-size:15px;}
+    .modalBody{padding:16px;}
+    .modalBody h4{margin:14px 0 6px; font-size:13px;}
+    .modalBody ul{margin:0; padding-left:18px; line-height:1.55; font-size:13px;}
+    .modalBody li{margin:6px 0;}
+    .modalFooter{
+      padding:12px 16px;
+      border-top:1px solid var(--line);
+      background:linear-gradient(180deg,#fff,var(--soft));
+      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center;
+    }
     .hidden{display:none!important}
     .divider{height:1px; background:var(--line); margin:12px 0}
     .footerNote{
@@ -579,6 +619,7 @@
         <button type="button" class="btn" id="btnSpellbook">Theory Spellbook</button>
         <button type="button" class="btn" id="btnDaily">Daily Challenge</button>
         <button type="button" class="btn" id="btnDifficulty">Mode: Normal</button>
+        <button type="button" class="btn" id="btnHowTo">How to Play</button>
         <button type="button" class="btn" id="btnSound">Sound: Off</button>
         <button type="button" class="btn" id="btnMotion">Motion: On</button>
         <button type="button" class="btn btnGhost" id="btnReset">Reset</button>
@@ -909,6 +950,67 @@
   </div>
 
   <div class="toast" id="toast">Copied</div>
+
+  <div class="modalOverlay" id="howToOverlay" role="dialog" aria-modal="true" aria-labelledby="howToTitle">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="howToTitle">How to Play: The Biliteracy Quest</h3>
+        <button type="button" class="btn" id="btnCloseHowTo">Close</button>
+      </div>
+      <div class="modalBody">
+        <p class="tiny" style="margin:0;">
+          Core idea: you play through decisions, then export your exact path as a Canvas-ready image (and text) so you can submit it.
+        </p>
+
+        <h4>1) Start a run</h4>
+        <ul>
+          <li>Go to <b>Mission Hub</b> and click <b>Play Mission</b>.</li>
+          <li>Use <b>Daily Challenge</b> for the same seeded variant run each day (good for comparing with classmates).</li>
+          <li>Use <b>Mode</b> to switch difficulty: <b>Support</b> gives more tokens, <b>Hard</b> gives fewer.</li>
+        </ul>
+
+        <h4>2) Make choices (3 rounds)</h4>
+        <ul>
+          <li>Click a choice card. You’ll see <b>Outcome</b> + <b>Tradeoff</b> and a <b>Theory Lens Prompt</b>.</li>
+          <li><b>Save justification</b> to earn XP and build a streak bonus.</li>
+          <li><b>Next Round</b> advances. If you advance without saving, your streak can break (unless a perk shields it).</li>
+        </ul>
+
+        <h4>3) Use resources (tokens)</h4>
+        <ul>
+          <li><b>Support tokens</b>: open Lens Hints and apply Spells in the Spellbook.</li>
+          <li><b>Hint tokens</b>: click <b>Ask Coach</b> for a guided hint.</li>
+          <li><b>Time tokens</b>: used by some perks (ex: Streak Shield).</li>
+          <li>See all tokens + goals in the <b>Player Panel</b>.</li>
+        </ul>
+
+        <h4>4) Finish + export for Canvas</h4>
+        <ul>
+          <li>Click <b>Finish mission</b> to see your results.</li>
+          <li><b>Canvas Post Image</b>: switch <b>Timeline / Diagram</b> (Diagram explains the path best).</li>
+          <li>Click <b>Copy image</b> (if supported) or <b>Download PNG</b> and upload to Canvas.</li>
+          <li><b>Copy for Canvas</b> copies a text version (best for accessibility).</li>
+        </ul>
+
+        <h4>5) Replay + compare</h4>
+        <ul>
+          <li>Each run has a <b>Replay code</b> (also embedded as a QR on the image). Paste it to load the exact path.</li>
+          <li><b>Compare two runs</b>: paste two codes → <b>Compare</b> to generate a side-by-side Canvas image.</li>
+          <li><b>Run history</b> (Player Panel) lets you re-open past runs and copy their codes.</li>
+        </ul>
+
+        <h4>Settings</h4>
+        <ul>
+          <li><b>Sound</b>: turn on to hear clicks/saves/badges (your first click unlocks audio in most browsers).</li>
+          <li><b>Motion</b>: turn off for reduced motion.</li>
+        </ul>
+      </div>
+      <div class="modalFooter">
+        <span class="tiny">Tip: If you’re submitting to Canvas, the <b>Diagram</b> export is the clearest, and the <b>text scroll</b> is the most accessible.</span>
+        <button type="button" class="btn btnGold" id="btnJumpMissions">Go to Mission Hub</button>
+      </div>
+    </div>
+  </div>
 
   <script src="vendor/qrcode.js"></script>
   <script>
@@ -1458,6 +1560,7 @@
     const btnSpellbook = el("btnSpellbook");
     const btnDaily = el("btnDaily");
     const btnDifficulty = el("btnDifficulty");
+    const btnHowTo = el("btnHowTo");
     const btnSound = el("btnSound");
     const btnMotion = el("btnMotion");
     const btnReset = el("btnReset");
@@ -1490,6 +1593,9 @@
     const btnViewCompare = el("btnViewCompare");
     const postViewNote = el("postViewNote");
     const confettiEl = el("confetti");
+    const howToOverlay = el("howToOverlay");
+    const btnCloseHowTo = el("btnCloseHowTo");
+    const btnJumpMissions = el("btnJumpMissions");
 
     let TIMER_TICK = null;
     let AUDIO_CTX = null;
@@ -3644,6 +3750,46 @@
       saveSettings();
       applySettingsToUI();
       showToast("Mode: " + (STATE.difficulty === "hard" ? "Hard" : (STATE.difficulty === "support" ? "Support" : "Normal")));
+    });
+
+    function openHowTo(){
+      if(!howToOverlay) return;
+      howToOverlay.style.display = "block";
+      // Close on overlay click (outside modal)
+      howToOverlay.onclick = (e)=>{
+        if(e.target === howToOverlay) closeHowTo();
+      };
+      document.addEventListener("keydown", onHowToEsc, { once:false });
+    }
+    function closeHowTo(){
+      if(!howToOverlay) return;
+      howToOverlay.style.display = "none";
+      document.removeEventListener("keydown", onHowToEsc);
+    }
+    function onHowToEsc(e){
+      if(e.key === "Escape") closeHowTo();
+    }
+
+    if(btnHowTo) btnHowTo.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      openHowTo();
+    });
+    if(btnCloseHowTo) btnCloseHowTo.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      closeHowTo();
+    });
+    if(btnJumpMissions) btnJumpMissions.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      closeHowTo();
+      setStep(0);
+      screenMissions.classList.remove("hidden");
+      screenScenario.classList.add("hidden");
+      screenSubmit.classList.add("hidden");
+      screenSpellbook.classList.add("hidden");
+      window.scrollTo({top:0, behavior:"smooth"});
     });
 
     btnReset.addEventListener("click", resetAll);
