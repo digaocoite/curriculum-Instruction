@@ -578,6 +578,7 @@
         <button type="button" class="btn btnGold" id="btnStart">Mission Hub</button>
         <button type="button" class="btn" id="btnSpellbook">Theory Spellbook</button>
         <button type="button" class="btn" id="btnDaily">Daily Challenge</button>
+        <button type="button" class="btn" id="btnDifficulty">Mode: Normal</button>
         <button type="button" class="btn" id="btnSound">Sound: Off</button>
         <button type="button" class="btn" id="btnMotion">Motion: On</button>
         <button type="button" class="btn btnGhost" id="btnReset">Reset</button>
@@ -700,9 +701,11 @@
                         <p id="lensPrompt"></p>
                         <div class="lensRow">
                           <button type="button" class="lensBtn" id="btnShowLens">Open Lens Hints</button>
+                          <button type="button" class="lensBtn" id="btnCoach">Ask Coach</button>
                           <button type="button" class="lensBtn" id="btnNext">Next Round</button>
                         </div>
                         <div class="lensPop" id="lensPop"></div>
+                        <div class="lensPop" id="coachPop"></div>
                       </div>
                     </div>
 
@@ -777,6 +780,26 @@
                   </div>
                 </div>
 
+                <div style="margin-top:12px;" class="sceneBox">
+                  <h4>Compare two runs</h4>
+                  <p class="tiny" style="margin:0 0 10px;">Paste two replay codes to generate a side-by-side comparison image for Canvas.</p>
+                  <div class="resultGrid">
+                    <div>
+                      <b class="tiny">Run A</b>
+                      <textarea id="compareCodeA" placeholder="BQ1:..." style="min-height:70px;"></textarea>
+                    </div>
+                    <div>
+                      <b class="tiny">Run B</b>
+                      <textarea id="compareCodeB" placeholder="BQ1:..." style="min-height:70px;"></textarea>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <button type="button" class="miniBtn miniBtnGold" id="btnCompareRuns">Compare</button>
+                    <button type="button" class="miniBtn" id="btnSwapRuns">Swap A/B</button>
+                    <span class="note" id="compareStatus">—</span>
+                  </div>
+                </div>
+
                 <div class="canvasWrap">
                   <h4 style="margin:0 0 6px;">Canvas Post Image (your exact path)</h4>
                   <p class="tiny" style="margin:0 0 10px;">
@@ -787,6 +810,7 @@
                       <span class="pill">View</span>
                       <button type="button" class="miniBtn miniBtnGold" id="btnViewTimeline">Timeline</button>
                       <button type="button" class="miniBtn" id="btnViewDiagram">Diagram</button>
+                      <button type="button" class="miniBtn" id="btnViewCompare">Compare</button>
                     </div>
                     <span class="note" id="postViewNote">Timeline view</span>
                   </div>
@@ -901,6 +925,7 @@
       soundOn: false,
       motionOn: true,
       dailyMode: false,
+      difficulty: "normal", // "normal" | "support" | "hard"
 
       // Meta-game
       artifacts: [],
@@ -912,6 +937,12 @@
       lensUsedRounds: [],
       runRank: null,
       runXpStart: 0,
+      hintTokens: 0,
+      hintUsedRounds: [],
+      hintLog: [],
+      timeTokensStart: 0,
+      supportTokensStart: 0,
+      hintTokensStart: 0,
 
       // Score breakdown (per mission)
       score: {
@@ -923,7 +954,7 @@
       },
 
       // Export view
-      postView: "timeline" // "timeline" | "diagram"
+      postView: "timeline" // "timeline" | "diagram" | "compare"
     };
 
     const SPELLS = [
@@ -1410,6 +1441,8 @@
     const lensPrompt = el("lensPrompt");
     const lensPop = el("lensPop");
     const btnShowLens = el("btnShowLens");
+    const btnCoach = el("btnCoach");
+    const coachPop = el("coachPop");
     const btnNext = el("btnNext");
 
     const justification = el("justification");
@@ -1424,6 +1457,7 @@
     const btnStart = el("btnStart");
     const btnSpellbook = el("btnSpellbook");
     const btnDaily = el("btnDaily");
+    const btnDifficulty = el("btnDifficulty");
     const btnSound = el("btnSound");
     const btnMotion = el("btnMotion");
     const btnReset = el("btnReset");
@@ -1439,6 +1473,11 @@
     const btnCopyReplayCode = el("btnCopyReplayCode");
     const btnLoadReplayCode = el("btnLoadReplayCode");
     const btnClearReplayView = el("btnClearReplayView");
+    const compareCodeA = el("compareCodeA");
+    const compareCodeB = el("compareCodeB");
+    const btnCompareRuns = el("btnCompareRuns");
+    const btnSwapRuns = el("btnSwapRuns");
+    const compareStatus = el("compareStatus");
 
     const toast = el("toast");
     const postCanvas = el("postCanvas");
@@ -1448,6 +1487,7 @@
     const postStatus = el("postStatus");
     const btnViewTimeline = el("btnViewTimeline");
     const btnViewDiagram = el("btnViewDiagram");
+    const btnViewCompare = el("btnViewCompare");
     const postViewNote = el("postViewNote");
     const confettiEl = el("confetti");
 
@@ -1455,6 +1495,7 @@
     let AUDIO_CTX = null;
     let AUDIO_UNLOCKED = false;
     let VIEW_RUN = null; // when viewing history/replay (does not change XP)
+    let VIEW_COMPARE = null; // {a: run, b: run}
 
     function showToast(msg){
       toast.textContent = msg;
@@ -1470,11 +1511,13 @@
         STATE.soundOn = Boolean(s.soundOn ?? false);
         STATE.motionOn = Boolean(s.motionOn ?? !prefersReduced);
         STATE.dailyMode = Boolean(s.dailyMode ?? false);
+        STATE.difficulty = String(s.difficulty ?? "normal");
       } catch(_e){
         // Defaults
         STATE.soundOn = false;
         STATE.motionOn = true;
         STATE.dailyMode = false;
+        STATE.difficulty = "normal";
       }
       applySettingsToUI();
     }
@@ -1484,7 +1527,8 @@
         localStorage.setItem("biliteracyQuest_settings_v1", JSON.stringify({
           soundOn: STATE.soundOn,
           motionOn: STATE.motionOn,
-          dailyMode: STATE.dailyMode
+          dailyMode: STATE.dailyMode,
+          difficulty: STATE.difficulty
         }));
       } catch(_e){
         // ignore
@@ -1495,6 +1539,10 @@
       if(btnSound) btnSound.textContent = "Sound: " + (STATE.soundOn ? "On" : "Off");
       if(btnMotion) btnMotion.textContent = "Motion: " + (STATE.motionOn ? "On" : "Off");
       if(btnDaily) btnDaily.textContent = STATE.dailyMode ? "Daily: On" : "Daily Challenge";
+      if(btnDifficulty){
+        const label = STATE.difficulty === "hard" ? "Hard" : (STATE.difficulty === "support" ? "Support" : "Normal");
+        btnDifficulty.textContent = "Mode: " + label;
+      }
       document.body.classList.toggle("reducedMotion", !STATE.motionOn);
     }
 
@@ -1751,11 +1799,19 @@
       }));
       const choiceIdxs = decisions.map(d=> (typeof d.choiceIndex === "number" ? d.choiceIndex : null));
       const runXpEarned = Math.max(0, STATE.xp - (STATE.runXpStart || 0));
+      const justificationsSaved = STATE.savedJustifications.length;
+      const theoryJustifications = STATE.savedJustifications.filter(j=> containsTheory(j.text)).length;
+      const lensHintsUsed = STATE.lensUsedRounds.length;
+      const spellsUsed = STATE.appliedSpells.length;
+      const supportSpent = Math.max(0, (STATE.supportTokensStart || 0) - (STATE.supportTokens || 0));
+      const timeSpent = Math.max(0, (STATE.timeTokensStart || 0) - (STATE.timeTokens || 0));
+      const hintsSpent = Math.max(0, (STATE.hintTokensStart || 0) - (STATE.hintTokens || 0));
       return {
         v: 1,
         runId: STATE.runId,
         seed: STATE.runSeed,
         daily: STATE.dailyMode,
+        difficulty: STATE.difficulty,
         missionId: STATE.missionId,
         missionTitle,
         durationMs,
@@ -1763,6 +1819,15 @@
         impact,
         score: {...STATE.score},
         runXpEarned,
+        hintsUsed: STATE.hintUsedRounds.length,
+        hintLog: STATE.hintLog.slice(0, 5),
+        justificationsSaved,
+        theoryJustifications,
+        lensHintsUsed,
+        spellsUsed,
+        supportSpent,
+        timeSpent,
+        hintsSpent,
         choiceIdxs,
         decisions
       };
@@ -1774,6 +1839,7 @@
       lines.push("Mission: " + (run.missionTitle || run.missionId || "—"));
       if(run.runId) lines.push("Run ID: " + run.runId);
       if(typeof run.durationMs === "number") lines.push("Time: " + formatDuration(run.durationMs));
+      if(run.difficulty) lines.push("Mode: " + run.difficulty);
       if(run.rank) lines.push("Run rank: " + run.rank);
       lines.push("");
       const path = (run.decisions || []).slice().sort((a,b)=> a.round - b.round);
@@ -1798,8 +1864,36 @@
       lines.push("Run XP earned: +" + (run.runXpEarned || 0));
       lines.push("Score breakdown: base " + (s.base||0) + ", theory " + (s.theory||0) + ", streak " + (s.streak||0) + ", spells " + (s.spells||0) + ", time " + (s.time||0));
       lines.push("");
+      const ach = computeAchievements(run);
+      if(ach.length){
+        lines.push("ACHIEVEMENTS");
+        ach.forEach(a=> lines.push(a.icon + " " + a.title));
+        lines.push("");
+      }
       lines.push("Replay code: " + buildReplayCode(run));
       return lines.join("\n");
+    }
+
+    function computeAchievements(run){
+      const out = [];
+      const durSec = Math.floor((run.durationMs || 0) / 1000);
+      const perfect = run.rank === "VICTORY";
+      const fast = durSec > 0 && durSec <= 180;
+      const noCoach = (run.hintsUsed || 0) === 0;
+      const noLens = (run.lensHintsUsed || 0) === 0;
+      const noSpells = (run.spellsUsed || 0) === 0;
+      const theoryMaster = (run.theoryJustifications || 0) >= 2;
+      const fullJustifications = (run.justificationsSaved || 0) >= 3;
+      const supportEff = (run.supportSpent || 0) <= 1;
+
+      if(perfect) out.push({id:"perfectGoals", icon:"🏆", title:"Perfect Goals (Victory)"});
+      if(fast) out.push({id:"fastFinish", icon:"⚡", title:"Fast Finish (≤ 3:00)"});
+      if(fullJustifications && theoryMaster) out.push({id:"theoryMaster", icon:"📚", title:"Theory Master (2+ theory justifications)"});
+      if(noCoach) out.push({id:"noCoach", icon:"🧠", title:"No-Coach Run (0 hints)"});
+      if(noLens && noSpells) out.push({id:"noSupport", icon:"🧱", title:"No-Support Run (no lens/spells)"});
+      if(supportEff) out.push({id:"efficient", icon:"🧰", title:"Support Efficient (≤ 1 support spent)"});
+
+      return out.slice(0, 6);
     }
 
     function buildReplayPayload(run){
@@ -1809,7 +1903,8 @@
         s: run.seed,
         c: (run.choiceIdxs || []).map(x=> (typeof x === "number" ? x : 0)),
         t: Math.floor((run.durationMs || 0) / 1000),
-        r: run.rank || null
+        r: run.rank || null,
+        d: run.difficulty || "normal"
       };
     }
 
@@ -1853,6 +1948,7 @@
         runId: "REPLAY",
         seed,
         daily: false,
+        difficulty: payload.d || "normal",
         missionId,
         missionTitle: mission.title,
         durationMs,
@@ -1865,15 +1961,26 @@
       };
     }
 
+    function parseReplayCodeToRun(raw){
+      const txt = String(raw || "").trim();
+      if(!txt) return null;
+      const code = txt.startsWith("BQ1:") ? txt.slice(4) : txt;
+      const json = b64urlDecodeUtf8(code);
+      const payload = JSON.parse(json);
+      return runFromReplayPayload(payload);
+    }
+
     function hydrateSubmitViewFromRun(){
       const run = getActiveRunForView();
       if(scoreboard){
         const s = run.score || {base:0,theory:0,streak:0,spells:0,time:0};
+        const ach = computeAchievements(run);
         scoreboard.innerHTML = `
           <b>Run</b>: ${run.missionTitle || "—"}<br/>
-          <b>Rank</b>: ${run.rank || "—"} • <b>Time</b>: ${formatDuration(run.durationMs || 0)} • <b>Run XP</b>: +${run.runXpEarned || 0}<br/>
+          <b>Mode</b>: ${run.difficulty || "normal"} • <b>Rank</b>: ${run.rank || "—"} • <b>Time</b>: ${formatDuration(run.durationMs || 0)} • <b>Run XP</b>: +${run.runXpEarned || 0}<br/>
           <b>XP breakdown</b>: base ${s.base||0}, theory ${s.theory||0}, streak ${s.streak||0}, spells ${s.spells||0}, time ${s.time||0}<br/>
-          <b>Impact</b>: Access ${run.impact?.access ?? "—"} • Rigor ${run.impact?.rigor ?? "—"} • Voice ${run.impact?.voice ?? "—"}
+          <b>Impact</b>: Access ${run.impact?.access ?? "—"} • Rigor ${run.impact?.rigor ?? "—"} • Voice ${run.impact?.voice ?? "—"}<br/>
+          <b>Achievements</b>: ${ach.length ? ach.map(a=> `${a.icon} ${a.title}`).join(" • ") : "—"}
         `;
       }
       if(rankNote) rankNote.textContent = run.rank ? `Rank: ${run.rank}` : "—";
@@ -1903,6 +2010,7 @@
       const pills = [];
       pills.push({ cls:"tag tagGold", text:`⏳ Time ${STATE.timeTokens}` });
       pills.push({ cls:"tag tagDark", text:`🧰 Support ${STATE.supportTokens}` });
+      pills.push({ cls:"tag tagDark", text:`💡 Hints ${STATE.hintTokens}` });
       if(STATE.dailyMode) pills.push({ cls:"tag tagGreen", text:"Daily" });
       if(STATE.runSeed !== null) pills.push({ cls:"tag tagDark", text:`Seed ${String(STATE.runSeed).slice(0,6)}` });
       pills.forEach(p=>{
@@ -1918,7 +2026,12 @@
         return;
       }
       const impact = estimateImpact();
-      goalsText.textContent = `Goals: Access ≥ ${m.goals.access}, Rigor ≥ ${m.goals.rigor}, Voice ≥ ${m.goals.voice}, Time ≤ ${m.goals.timeSec}s. Current: A${impact.access} R${impact.rigor} V${impact.voice}, ${formatDuration(runElapsedMs())}.`;
+      const diff = (STATE.difficulty === "hard" || STATE.difficulty === "support" || STATE.difficulty === "normal") ? STATE.difficulty : "normal";
+      const timeTarget = m.goals.timeSec + (diff === "hard" ? -30 : (diff === "support" ? 30 : 0));
+      const accessTarget = m.goals.access + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+      const rigorTarget = m.goals.rigor + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+      const voiceTarget = m.goals.voice + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+      goalsText.textContent = `Goals (${diff}): Access ≥ ${accessTarget}, Rigor ≥ ${rigorTarget}, Voice ≥ ${voiceTarget}, Time ≤ ${timeTarget}s. Current: A${impact.access} R${impact.rigor} V${impact.voice}, ${formatDuration(runElapsedMs())}.`;
     }
 
     function renderPerksAndInventory(){
@@ -2048,9 +2161,19 @@
       STATE.lensUsedRounds = [];
 
       // Run resources
-      STATE.timeTokens = 2 + (hasPerk("timeBank") ? 1 : 0);
-      STATE.supportTokens = 2 + (hasPerk("supportSage") ? 1 : 0);
+      const diff = (STATE.difficulty === "hard" || STATE.difficulty === "support" || STATE.difficulty === "normal") ? STATE.difficulty : "normal";
+      const baseTime = diff === "hard" ? 1 : (diff === "support" ? 3 : 2);
+      const baseSupport = diff === "hard" ? 1 : (diff === "support" ? 4 : 2);
+      const baseHints = diff === "hard" ? 0 : (diff === "support" ? 2 : 1);
+      STATE.timeTokens = baseTime + (hasPerk("timeBank") ? 1 : 0);
+      STATE.supportTokens = baseSupport + (hasPerk("supportSage") ? 1 : 0);
+      STATE.hintTokens = baseHints;
+      STATE.timeTokensStart = STATE.timeTokens;
+      STATE.supportTokensStart = STATE.supportTokens;
+      STATE.hintTokensStart = STATE.hintTokens;
       STATE.streakShieldUsed = false;
+      STATE.hintUsedRounds = [];
+      STATE.hintLog = [];
 
       // Reset score breakdown
       STATE.score = { base:0, theory:0, streak:0, spells:0, time:0 };
@@ -2097,6 +2220,7 @@
       choicesEl.innerHTML = "";
       resultArea.classList.add("hidden");
       lensPop.style.display = "none";
+      if(coachPop) coachPop.style.display = "none";
       justification.value = "";
       justificationStatus.textContent = "Not saved yet";
 
@@ -2178,9 +2302,49 @@
         }
       };
 
+      if(btnCoach && coachPop){
+        btnCoach.onclick = ()=>{
+          const roundNum = STATE.round + 1;
+          const opening = coachPop.style.display !== "block";
+          if(opening){
+            const alreadyUsed = STATE.hintUsedRounds.includes(roundNum);
+            if(!alreadyUsed){
+              if(STATE.hintTokens <= 0){
+                playSfx("fail");
+                showToast("No Coach hints left");
+                return;
+              }
+              STATE.hintTokens -= 1;
+              STATE.hintUsedRounds.push(roundNum);
+              const hint = buildCoachHint(r, c, entry);
+              STATE.hintLog.push({ round: roundNum, hint });
+              coachPop.innerHTML = `<strong>Coach Hint</strong><ul><li>${hint}</li></ul>`;
+              playSfx("select");
+              updatePlayerPanel();
+              updateLog();
+              renderCanvasPostSafe();
+            } else {
+              // Show the last hint we stored for this round
+              const h = STATE.hintLog.find(x=> x.round === roundNum)?.hint || "Focus on the tradeoff and connect to one lens.";
+              coachPop.innerHTML = `<strong>Coach Hint</strong><ul><li>${h}</li></ul>`;
+            }
+            coachPop.style.display = "block";
+          } else {
+            coachPop.style.display = "none";
+          }
+        };
+      }
+
       btnNext.onclick = ()=> goNextRound();
 
       btnSaveJustification.onclick = ()=> saveJustification(entry);
+    }
+
+    function buildCoachHint(roundData, choice, entry){
+      const hints = Array.isArray(roundData?.lensHints) ? roundData.lensHints : [];
+      const pick = hints.length ? hints[0] : "Name one theory lens and explain why this choice improves access and learning.";
+      const trade = entry?.tradeoff ? `One strong move is to acknowledge the tradeoff: ${entry.tradeoff}` : "Name one tradeoff and how you’d mitigate it.";
+      return `${pick} ${trade}`;
     }
 
     function containsTheory(text){
@@ -2431,8 +2595,13 @@
       const impact = estimateImpact();
       const goals = m.goals || null;
       if(goals){
-        const met = impact.access >= goals.access && impact.rigor >= goals.rigor && impact.voice >= goals.voice && elapsedSec <= goals.timeSec;
-        const close = (impact.access >= goals.access && impact.rigor >= goals.rigor) || (impact.access >= goals.access && impact.voice >= goals.voice) || (impact.rigor >= goals.rigor && impact.voice >= goals.voice);
+        const diff = (STATE.difficulty === "hard" || STATE.difficulty === "support" || STATE.difficulty === "normal") ? STATE.difficulty : "normal";
+        const timeTarget = goals.timeSec + (diff === "hard" ? -30 : (diff === "support" ? 30 : 0));
+        const accessTarget = goals.access + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+        const rigorTarget = goals.rigor + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+        const voiceTarget = goals.voice + (diff === "hard" ? 5 : (diff === "support" ? -5 : 0));
+        const met = impact.access >= accessTarget && impact.rigor >= rigorTarget && impact.voice >= voiceTarget && elapsedSec <= timeTarget;
+        const close = (impact.access >= accessTarget && impact.rigor >= rigorTarget) || (impact.access >= accessTarget && impact.voice >= voiceTarget) || (impact.rigor >= rigorTarget && impact.voice >= voiceTarget);
         STATE.runRank = met ? "VICTORY" : (close ? "PARTIAL" : "TRY AGAIN");
       } else {
         STATE.runRank = "COMPLETE";
@@ -2702,7 +2871,9 @@
       const run = getActiveRunForView();
 
       // Switcher
-      if(STATE.postView === "diagram"){
+      if(STATE.postView === "compare" && VIEW_COMPARE){
+        renderCanvasCompare(ctx, W, H, VIEW_COMPARE.a, VIEW_COMPARE.b);
+      } else if(STATE.postView === "diagram"){
         renderCanvasDiagram(ctx, W, H, run);
       } else {
         renderCanvasTimeline(ctx, W, H, run);
@@ -2975,6 +3146,8 @@
       py += 22;
       wrapText(ctx, `Run XP: +${run.runXpEarned || 0}`, px, py, pw, 20, 1);
       py += 26;
+      wrapText(ctx, `Coach hints: ${run.hintsUsed || 0}`, px, py, pw, 20, 1);
+      py += 26;
 
       ctx.fillStyle = "rgba(255,255,255,.86)";
       ctx.font = "900 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
@@ -3019,6 +3192,24 @@
         ctx.fillText(line, px, py);
         py += 18;
       });
+
+      py += 10;
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      ctx.font = "900 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText("Achievements", px, py);
+      py += 22;
+      ctx.fillStyle = "rgba(255,255,255,.70)";
+      ctx.font = "700 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      const ach = computeAchievements(run);
+      if(!ach.length){
+        ctx.fillText("—", px, py);
+        py += 18;
+      } else {
+        ach.slice(0, 4).forEach(a=>{
+          wrapText(ctx, `${a.icon} ${a.title}`, px, py, pw, 18, 1);
+          py += 18;
+        });
+      }
       ctx.restore();
 
       // QR code (replay)
@@ -3031,6 +3222,133 @@
       ctx.font = "650 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
       ctx.textBaseline = "bottom";
       ctx.fillText("Diagram view: a flowchart + summary panel. Scan QR to load this run.", 56, H - 22);
+      ctx.restore();
+    }
+
+    function renderCanvasCompare(ctx, W, H, runA, runB){
+      // Base background + custom header
+      ctx.clearRect(0,0,W,H);
+      const bg = ctx.createLinearGradient(0,0,W,H);
+      bg.addColorStop(0, "#070709");
+      bg.addColorStop(.55, "#101014");
+      bg.addColorStop(1, "#060608");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0,0,W,H);
+      const glow = ctx.createRadialGradient(W*0.2, H*0.15, 10, W*0.2, H*0.15, H*0.8);
+      glow.addColorStop(0, "rgba(241,184,45,.30)");
+      glow.addColorStop(1, "rgba(241,184,45,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0,0,W,H);
+
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "900 44px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "top";
+      ctx.fillText("RUN COMPARISON", 56, 42);
+      ctx.fillStyle = "rgba(255,255,255,.72)";
+      ctx.font = "800 22px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText("Side-by-side path diagram", 56, 98);
+
+      const cardX = 56, cardY = 150, cardW = W - 112, cardH = H - 190;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.06)";
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      const gutter = 18;
+      const colW = Math.floor((cardW - gutter - 44) / 2);
+      const colX1 = cardX + 22;
+      const colX2 = colX1 + colW + gutter;
+      const colY = cardY + 22;
+      const colH = cardH - 44;
+
+      const diffs = computeChoiceDiffs(runA, runB);
+      drawCompareColumn(ctx, colX1, colY, colW, colH, "RUN A", runA, diffs, "A");
+      drawCompareColumn(ctx, colX2, colY, colW, colH, "RUN B", runB, diffs, "B");
+
+      // Footer note
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.46)";
+      ctx.font = "650 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Highlighted rounds differ between runs. Each column includes its replay QR.", 56, H - 18);
+      ctx.restore();
+    }
+
+    function computeChoiceDiffs(a, b){
+      const aa = Array.isArray(a?.choiceIdxs) ? a.choiceIdxs : [];
+      const bb = Array.isArray(b?.choiceIdxs) ? b.choiceIdxs : [];
+      const n = Math.max(aa.length, bb.length);
+      const diffs = new Array(n).fill(false);
+      for(let i=0;i<n;i++){
+        const x = aa[i];
+        const y = bb[i];
+        diffs[i] = (typeof x === "number" && typeof y === "number") ? (x !== y) : (String(x) !== String(y));
+      }
+      return diffs;
+    }
+
+    function drawCompareColumn(ctx, x, y, w, h, title, run, diffs, side){
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,.18)";
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x, y, w, h, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      const pad = 16;
+      let cy = y + pad;
+      const cx = x + pad;
+      const cw = w - pad*2;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "900 20px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "top";
+      ctx.fillText(title, cx, cy);
+      cy += 24;
+      ctx.fillStyle = "rgba(255,255,255,.78)";
+      ctx.font = "800 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      wrapText(ctx, run.missionTitle || run.missionId || "—", cx, cy, cw, 20, 1);
+      cy += 22;
+      ctx.font = "700 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillStyle = "rgba(255,255,255,.70)";
+      ctx.fillText(`Mode: ${run.difficulty || "normal"} • Rank: ${run.rank || "—"} • ${formatDuration(run.durationMs || 0)}`, cx, cy);
+      cy += 22;
+      ctx.fillText(`Impact: A${run.impact?.access ?? 0} R${run.impact?.rigor ?? 0} V${run.impact?.voice ?? 0}`, cx, cy);
+      cy += 22;
+
+      // Choices list
+      ctx.font = "900 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      ctx.fillText("Path", cx, cy);
+      cy += 18;
+
+      const decisions = (run.decisions || []).slice().sort((a,b)=> a.round - b.round);
+      ctx.font = "700 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      decisions.forEach((d, i)=>{
+        const diff = diffs[i];
+        ctx.fillStyle = diff ? "rgba(241,184,45,.92)" : "rgba(255,255,255,.70)";
+        const line = `R${d.round}: ${d.choice}`;
+        wrapText(ctx, line, cx, cy, cw, 18, 1);
+        cy += 18;
+        if(diff){
+          ctx.fillStyle = "rgba(255,255,255,.55)";
+          wrapText(ctx, "• differs from other run", cx + 14, cy, cw - 14, 16, 1);
+          cy += 16;
+        }
+      });
+
+      // QR (bottom)
+      const code = buildReplayCode(run);
+      const qrSize = Math.min(140, Math.floor(w * 0.42));
+      drawQrToCanvas(ctx, code, x + w - qrSize - 18, y + h - qrSize - 18, qrSize);
+
       ctx.restore();
     }
 
@@ -3130,10 +3448,21 @@
     });
 
     function setPostView(view){
-      STATE.postView = (view === "diagram") ? "diagram" : "timeline";
+      const v = (view === "diagram" || view === "compare") ? view : "timeline";
+      if(v === "compare" && !VIEW_COMPARE){
+        showToast("Paste two codes and click Compare first");
+        return;
+      }
+      STATE.postView = v;
       if(btnViewTimeline) btnViewTimeline.classList.toggle("miniBtnGold", STATE.postView === "timeline");
       if(btnViewDiagram) btnViewDiagram.classList.toggle("miniBtnGold", STATE.postView === "diagram");
-      if(postViewNote) postViewNote.textContent = (STATE.postView === "diagram") ? "Diagram view" : "Timeline view";
+      if(btnViewCompare) btnViewCompare.classList.toggle("miniBtnGold", STATE.postView === "compare");
+      if(postViewNote){
+        postViewNote.textContent =
+          (STATE.postView === "diagram") ? "Diagram view" :
+          (STATE.postView === "compare") ? "Compare view" :
+          "Timeline view";
+      }
       renderCanvasPostSafe();
     }
 
@@ -3146,6 +3475,11 @@
       await unlockAudio();
       playSfx("select");
       setPostView("diagram");
+    });
+    if(btnViewCompare) btnViewCompare.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      setPostView("compare");
     });
 
     if(btnReplayMission) btnReplayMission.addEventListener("click", async ()=>{
@@ -3175,10 +3509,7 @@
         return;
       }
       try{
-        const code = raw.startsWith("BQ1:") ? raw.slice(4) : raw;
-        const json = b64urlDecodeUtf8(code);
-        const payload = JSON.parse(json);
-        const run = runFromReplayPayload(payload);
+        const run = parseReplayCodeToRun(raw);
         if(!run){
           showToast("Invalid code");
           return;
@@ -3190,6 +3521,46 @@
       } catch(_e){
         showToast("Invalid code");
       }
+    });
+
+    if(btnCompareRuns) btnCompareRuns.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      const aRaw = compareCodeA ? compareCodeA.value.trim() : "";
+      const bRaw = compareCodeB ? compareCodeB.value.trim() : "";
+      if(!aRaw || !bRaw){
+        if(compareStatus) compareStatus.textContent = "Paste both codes";
+        showToast("Paste both codes");
+        return;
+      }
+      try{
+        const a = parseReplayCodeToRun(aRaw);
+        const b = parseReplayCodeToRun(bRaw);
+        if(!a || !b){
+          if(compareStatus) compareStatus.textContent = "Invalid code(s)";
+          showToast("Invalid code(s)");
+          return;
+        }
+        VIEW_COMPARE = {a, b};
+        if(compareStatus){
+          compareStatus.textContent = (a.missionId === b.missionId) ? "Ready (same mission)" : "Ready (different missions)";
+        }
+        setPostView("compare");
+        showToast("Compare view");
+      } catch(_e){
+        if(compareStatus) compareStatus.textContent = "Invalid code(s)";
+        showToast("Invalid code(s)");
+      }
+    });
+
+    if(btnSwapRuns) btnSwapRuns.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      if(!compareCodeA || !compareCodeB) return;
+      const tmp = compareCodeA.value;
+      compareCodeA.value = compareCodeB.value;
+      compareCodeB.value = tmp;
+      showToast("Swapped");
     });
 
     if(btnClearReplayView) btnClearReplayView.addEventListener("click", async ()=>{
@@ -3262,6 +3633,17 @@
       saveSettings();
       applySettingsToUI();
       showToast(STATE.motionOn ? "Motion on" : "Motion off");
+    });
+
+    if(btnDifficulty) btnDifficulty.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      const order = ["normal","support","hard"];
+      const i = Math.max(0, order.indexOf(STATE.difficulty));
+      STATE.difficulty = order[(i + 1) % order.length];
+      saveSettings();
+      applySettingsToUI();
+      showToast("Mode: " + (STATE.difficulty === "hard" ? "Hard" : (STATE.difficulty === "support" ? "Support" : "Normal")));
     });
 
     btnReset.addEventListener("click", resetAll);
