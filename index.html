@@ -782,6 +782,14 @@
                   <p class="tiny" style="margin:0 0 10px;">
                     This generates an image version of your run (mission, choices, outcomes, XP, badges). You can copy it or download it, then add it to a Canvas post.
                   </p>
+                  <div class="row" style="margin-top:0;">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                      <span class="pill">View</span>
+                      <button type="button" class="miniBtn miniBtnGold" id="btnViewTimeline">Timeline</button>
+                      <button type="button" class="miniBtn" id="btnViewDiagram">Diagram</button>
+                    </div>
+                    <span class="note" id="postViewNote">Timeline view</span>
+                  </div>
                   <canvas id="postCanvas" class="postCanvas" width="1200" height="675" aria-label="Canvas post image preview"></canvas>
                   <div class="canvasActions">
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -912,7 +920,10 @@
         streak: 0,
         spells: 0,
         time: 0
-      }
+      },
+
+      // Export view
+      postView: "timeline" // "timeline" | "diagram"
     };
 
     const SPELLS = [
@@ -1435,6 +1446,9 @@
     const btnDownloadPostImage = el("btnDownloadPostImage");
     const btnReRenderPost = el("btnReRenderPost");
     const postStatus = el("postStatus");
+    const btnViewTimeline = el("btnViewTimeline");
+    const btnViewDiagram = el("btnViewDiagram");
+    const postViewNote = el("postViewNote");
     const confettiEl = el("confetti");
 
     let TIMER_TICK = null;
@@ -2448,6 +2462,8 @@
       badgeSummary.textContent = "Badges " + STATE.badges.length;
       showToast(STATE.runRank ? ("Run: " + STATE.runRank) : "Quest complete");
       updatePlayerPanel();
+      // Default to the more explanatory export at the end.
+      setPostView("diagram");
       renderCanvasPostSafe();
       window.scrollTo({top:0, behavior:"smooth"});
     }
@@ -2685,6 +2701,15 @@
 
       const run = getActiveRunForView();
 
+      // Switcher
+      if(STATE.postView === "diagram"){
+        renderCanvasDiagram(ctx, W, H, run);
+      } else {
+        renderCanvasTimeline(ctx, W, H, run);
+      }
+    }
+
+    function renderCanvasBase(ctx, W, H, run){
       // Background
       ctx.clearRect(0,0,W,H);
       const bg = ctx.createLinearGradient(0,0,W,H);
@@ -2723,6 +2748,13 @@
         const pill = drawPill(ctx, px, py, t);
         px += pill.w + 12;
       });
+    }
+
+    function renderCanvasTimeline(ctx, W, H, run){
+      renderCanvasBase(ctx, W, H, run);
+
+      // Background
+      // (base drawn above)
 
       // Main card
       const cardX = 56, cardY = 214, cardW = W - 112, cardH = H - 270;
@@ -2819,6 +2851,189 @@
       ctx.restore();
     }
 
+    function renderCanvasDiagram(ctx, W, H, run){
+      renderCanvasBase(ctx, W, H, run);
+
+      const cardX = 56, cardY = 214, cardW = W - 112, cardH = H - 270;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.06)";
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      const path = [...(run.decisions || [])].sort((a,b)=> a.round - b.round);
+      const leftPaneW = Math.floor(cardW * 0.62);
+      const rightPaneX = cardX + leftPaneW + 22;
+      const rightPaneW = cardX + cardW - 44 - rightPaneX;
+
+      // Flowchart nodes (left)
+      const nodeX = cardX + 36;
+      let y = cardY + 30;
+      const nodeW = leftPaneW - 72;
+      const nodeH = 110;
+      const gap = 22;
+
+      path.forEach((e, i)=>{
+        // connector arrow from previous
+        if(i > 0){
+          const ax = nodeX + 30;
+          const ay1 = y - gap + 4;
+          const ay2 = y - 8;
+          ctx.save();
+          ctx.strokeStyle = "rgba(241,184,45,.55)";
+          ctx.lineWidth = 5;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(ax, ay1);
+          ctx.lineTo(ax, ay2);
+          ctx.stroke();
+          // arrow head
+          ctx.fillStyle = "rgba(241,184,45,.85)";
+          ctx.beginPath();
+          ctx.moveTo(ax, ay2);
+          ctx.lineTo(ax - 8, ay2 - 10);
+          ctx.lineTo(ax + 8, ay2 - 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // node box
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,.08)";
+        ctx.strokeStyle = "rgba(241,184,45,.25)";
+        ctx.lineWidth = 2;
+        roundRect(ctx, nodeX, y, nodeW, nodeH, 22);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // round badge
+        ctx.save();
+        ctx.fillStyle = "#F1B82D";
+        ctx.beginPath();
+        ctx.arc(nodeX + 26, y + 26, 16, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = "#111";
+        ctx.font = "900 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(e.round), nodeX + 26, y + 26);
+        ctx.restore();
+
+        // node text
+        const tx = nodeX + 54;
+        const maxW = nodeW - 70;
+        ctx.save();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = "rgba(255,255,255,.92)";
+        ctx.font = "900 22px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        wrapText(ctx, e.choice || `Round ${e.round}`, tx, y + 12, maxW, 24, 1);
+        ctx.fillStyle = "rgba(255,255,255,.76)";
+        ctx.font = "650 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        let yy = y + 40;
+        yy = wrapText(ctx, "Outcome: " + (e.outcome || ""), tx, yy, maxW, 22, 2);
+        ctx.fillStyle = "rgba(255,255,255,.60)";
+        wrapText(ctx, "Tradeoff: " + (e.tradeoff || ""), tx, yy, maxW, 22, 2);
+        ctx.restore();
+
+        y += nodeH + gap;
+      });
+
+      // Summary panel (right)
+      const paneY = cardY + 30;
+      const paneH = cardH - 60;
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,.20)";
+      ctx.strokeStyle = "rgba(255,255,255,.10)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, rightPaneX, paneY, rightPaneW, paneH, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      const impact = run.impact || {access:0, rigor:0, voice:0};
+      const s = run.score || {base:0,theory:0,streak:0,spells:0,time:0};
+      let py = paneY + 16;
+      const px = rightPaneX + 16;
+      const pw = rightPaneW - 32;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.font = "900 22px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "top";
+      ctx.fillText("Run Summary", px, py);
+      py += 30;
+
+      ctx.fillStyle = "rgba(255,255,255,.72)";
+      ctx.font = "700 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      wrapText(ctx, `Rank: ${run.rank || "—"}`, px, py, pw, 20, 1);
+      py += 22;
+      wrapText(ctx, `Run XP: +${run.runXpEarned || 0}`, px, py, pw, 20, 1);
+      py += 26;
+
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      ctx.font = "900 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText("Impact meters", px, py);
+      py += 22;
+
+      function bar(label, val, color){
+        ctx.fillStyle = "rgba(255,255,255,.70)";
+        ctx.font = "700 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+        ctx.fillText(label + " " + val + "/100", px, py);
+        py += 16;
+        // track
+        ctx.fillStyle = "rgba(255,255,255,.10)";
+        roundRect(ctx, px, py, pw, 10, 6);
+        ctx.fill();
+        // fill
+        ctx.fillStyle = color;
+        roundRect(ctx, px, py, Math.max(8, Math.floor((val/100)*pw)), 10, 6);
+        ctx.fill();
+        py += 18;
+      }
+      bar("Access", impact.access, "rgba(241,184,45,.90)");
+      bar("Rigor", impact.rigor, "rgba(255,255,255,.78)");
+      bar("Voice", impact.voice, "rgba(11,122,59,.70)");
+      py += 8;
+
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      ctx.font = "900 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.fillText("Score breakdown", px, py);
+      py += 22;
+
+      ctx.fillStyle = "rgba(255,255,255,.70)";
+      ctx.font = "700 14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      const lines = [
+        `Base: ${s.base||0}`,
+        `Theory: ${s.theory||0}`,
+        `Streak: ${s.streak||0}`,
+        `Spells: ${s.spells||0}`,
+        `Time: ${s.time||0}`
+      ];
+      lines.forEach(line=>{
+        ctx.fillText(line, px, py);
+        py += 18;
+      });
+      ctx.restore();
+
+      // QR code (replay)
+      const code = buildReplayCode(run);
+      drawQrToCanvas(ctx, code, W - 56 - 160, cardY + cardH - 160, 160);
+
+      // footer note
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.46)";
+      ctx.font = "650 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial";
+      ctx.textBaseline = "bottom";
+      ctx.fillText("Diagram view: a flowchart + summary panel. Scan QR to load this run.", 56, H - 22);
+      ctx.restore();
+    }
+
     async function copyPostImage(){
       if(!postCanvas) return;
       postStatus.textContent = "Copying…";
@@ -2912,6 +3127,25 @@
       renderCanvasPostSafe();
       postStatus.textContent = "Re-rendered";
       showToast("Updated");
+    });
+
+    function setPostView(view){
+      STATE.postView = (view === "diagram") ? "diagram" : "timeline";
+      if(btnViewTimeline) btnViewTimeline.classList.toggle("miniBtnGold", STATE.postView === "timeline");
+      if(btnViewDiagram) btnViewDiagram.classList.toggle("miniBtnGold", STATE.postView === "diagram");
+      if(postViewNote) postViewNote.textContent = (STATE.postView === "diagram") ? "Diagram view" : "Timeline view";
+      renderCanvasPostSafe();
+    }
+
+    if(btnViewTimeline) btnViewTimeline.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      setPostView("timeline");
+    });
+    if(btnViewDiagram) btnViewDiagram.addEventListener("click", async ()=>{
+      await unlockAudio();
+      playSfx("select");
+      setPostView("diagram");
     });
 
     if(btnReplayMission) btnReplayMission.addEventListener("click", async ()=>{
